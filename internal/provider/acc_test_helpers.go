@@ -312,15 +312,6 @@ func testAccServerIP(t *testing.T, serverNumber string) string {
 
 // --- Environment variable gates ---
 
-func testAccStorageBoxID(t *testing.T) string {
-	t.Helper()
-	v := os.Getenv("HETZNER_TEST_STORAGEBOX_ID")
-	if v == "" {
-		t.Skip("HETZNER_TEST_STORAGEBOX_ID not set; skipping")
-	}
-	return v
-}
-
 func testAccVSwitchCreateEnabled(t *testing.T) {
 	t.Helper()
 	if os.Getenv("HETZNER_TEST_VSWITCH_CREATE") != "1" {
@@ -602,65 +593,6 @@ func testAccVSwitchesDataSourceConfig() string {
 data "hetzner_vswitches" "test" {
 }
 `
-}
-
-func testAccStorageBoxConfig(storageBoxID, name string, webdav, samba, ssh, externalReachability, zfs bool) string {
-	return fmt.Sprintf(`
-resource "hetzner_storagebox" "test" {
-  storagebox_id         = %s
-  storagebox_name       = %q
-  webdav                = %t
-  samba                 = %t
-  ssh                   = %t
-  external_reachability = %t
-  zfs                   = %t
-}
-`, storageBoxID, name, webdav, samba, ssh, externalReachability, zfs)
-}
-
-func testAccStorageBoxDataSourceConfig(storageBoxID string) string {
-	return fmt.Sprintf(`
-data "hetzner_storagebox" "test" {
-  storagebox_id = %s
-}
-`, storageBoxID)
-}
-
-func testAccStorageBoxesDataSourceConfig() string {
-	return `
-data "hetzner_storageboxes" "test" {
-}
-`
-}
-
-func testAccStorageBoxSnapshotplanConfig(storageBoxID string, status string, hour, minute int) string {
-	return fmt.Sprintf(`
-resource "hetzner_storagebox_snapshotplan" "test" {
-  storagebox_id = %s
-  status        = %q
-  hour          = %d
-  minute        = %d
-  day_of_week   = 1
-  day_of_month  = 1
-  month         = 1
-}
-`, storageBoxID, status, hour, minute)
-}
-
-func testAccStorageBoxSubaccountConfig(storageBoxID, homedirectory, comment string, ssh, readonly bool) string {
-	return fmt.Sprintf(`
-resource "hetzner_storagebox_subaccount" "test" {
-  storagebox_id         = %s
-  homedirectory         = %q
-  comment               = %q
-  ssh                   = %t
-  webdav                = false
-  samba                 = false
-  external_reachability = false
-  readonly              = %t
-  createdir             = true
-}
-`, storageBoxID, homedirectory, comment, ssh, readonly)
 }
 
 func testAccFailoverDataSourceConfig(failoverIP string) string {

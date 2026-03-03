@@ -110,15 +110,11 @@ func (p *HetznerProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewIPResource,
 		NewSubnetResource,
 		NewFailoverResource,
-		// Batch 3: boot configs, storage box
+		// Batch 3: boot configs
 		NewBootRescueResource,
 		NewBootLinuxResource,
 		NewBootVNCResource,
 		NewBootWindowsResource,
-		NewStorageboxResource,
-		NewStorageboxSnapshotResource,
-		NewStorageboxSnapshotplanResource,
-		NewStorageboxSubaccountResource,
 	}
 }
 
@@ -142,16 +138,11 @@ func (p *HetznerProvider) DataSources(ctx context.Context) []func() datasource.D
 		NewSubnetsDataSource,
 		NewFailoverDataSource,
 		NewFailoversDataSource,
-		// Batch 3: boot configs, storage box, reset, WoL
+		// Batch 3: boot configs, reset, WoL
 		NewBootRescueDataSource,
 		NewBootLinuxDataSource,
 		NewBootVNCDataSource,
 		NewBootWindowsDataSource,
-		NewStorageboxDataSource,
-		NewStorageboxesDataSource,
-		NewStorageboxSnapshotDataSource,
-		NewStorageboxSnapshotplanDataSource,
-		NewStorageboxSubaccountDataSource,
 		NewResetDataSource,
 		NewWOLDataSource,
 	}

@@ -61,10 +61,6 @@ func (p *batch3TestProvider) Resources(_ context.Context) []func() resource.Reso
 		NewBootLinuxResource,
 		NewBootVNCResource,
 		NewBootWindowsResource,
-		NewStorageboxResource,
-		NewStorageboxSnapshotResource,
-		NewStorageboxSnapshotplanResource,
-		NewStorageboxSubaccountResource,
 	}
 }
 
@@ -74,11 +70,6 @@ func (p *batch3TestProvider) DataSources(_ context.Context) []func() datasource.
 		NewBootLinuxDataSource,
 		NewBootVNCDataSource,
 		NewBootWindowsDataSource,
-		NewStorageboxDataSource,
-		NewStorageboxesDataSource,
-		NewStorageboxSnapshotDataSource,
-		NewStorageboxSnapshotplanDataSource,
-		NewStorageboxSubaccountDataSource,
 		NewResetDataSource,
 		NewWOLDataSource,
 	}
