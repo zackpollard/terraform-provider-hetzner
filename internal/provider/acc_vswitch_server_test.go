@@ -55,7 +55,7 @@ func testAccCreateVSwitch(t *testing.T, name string, vlan int) string {
 					t.Logf("Removing server %d from vSwitch %s", s.ServerNumber, vswitchID)
 					params := url.Values{}
 					params.Set("server", fmt.Sprintf("%d", s.ServerNumber))
-					c.DeleteWithBody(fmt.Sprintf("/vswitch/%s/server", vswitchID), params)
+					_, _ = c.DeleteWithBody(fmt.Sprintf("/vswitch/%s/server", vswitchID), params)
 				}
 				if len(detail.Server) > 0 {
 					// Wait for server removal to propagate.

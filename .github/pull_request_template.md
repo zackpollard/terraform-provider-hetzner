@@ -1,16 +1,11 @@
-## Related Issue
-
-Fixes # <!-- INSERT ISSUE NUMBER -->
-
 ## Description
 
-In plain English, describe your approach to addressing the issue linked above. For example, if you made a particular design decision, let us know why you chose this path instead of another solution.
+Describe the change and why it is needed.
 
-<!-- heimdall_github_prtemplate:grc-pci_dss-2024-01-05 -->
-## Rollback Plan
+## Testing
 
-- [ ] If a change needs to be reverted, we will roll out an update to the code within 7 days.
+How was this tested?
 
-## Changes to Security Controls
-
-Are there any changes to security controls (access controls, encryption, logging) in this pull request? If so, explain.
+- [ ] Unit tests added/updated
+- [ ] Acceptance tests pass (`make testacc`)
+- [ ] Documentation updated (`make generate`)

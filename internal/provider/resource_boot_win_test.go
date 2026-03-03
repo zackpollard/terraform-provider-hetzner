@@ -21,7 +21,7 @@ func newTestBootWindowsServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodPost:
 			active = true
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"windows": map[string]interface{}{
 					"server_ip":       "1.2.3.4",
 					"server_ipv6_net": "2a01:4f8::/64",
@@ -34,7 +34,7 @@ func newTestBootWindowsServer() *httptest.Server {
 			})
 		case http.MethodGet:
 			if active {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"windows": map[string]interface{}{
 						"server_ip":       "1.2.3.4",
 						"server_ipv6_net": "2a01:4f8::/64",
@@ -46,7 +46,7 @@ func newTestBootWindowsServer() *httptest.Server {
 					},
 				})
 			} else {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"windows": map[string]interface{}{
 						"server_ip":       "1.2.3.4",
 						"server_ipv6_net": "2a01:4f8::/64",
@@ -61,7 +61,7 @@ func newTestBootWindowsServer() *httptest.Server {
 		case http.MethodDelete:
 			active = false
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"windows": map[string]interface{}{
 					"server_ip":       "1.2.3.4",
 					"server_ipv6_net": "2a01:4f8::/64",
@@ -76,7 +76,7 @@ func newTestBootWindowsServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccBootWindowsResource_Create(t *testing.T) {
+func TestUnitBootWindowsResource_Create(t *testing.T) {
 	ts := newTestBootWindowsServer()
 	defer ts.Close()
 
@@ -100,7 +100,7 @@ resource "hetzner_boot_windows" "test" {
 	})
 }
 
-func TestAccBootWindowsDataSource(t *testing.T) {
+func TestUnitBootWindowsDataSource(t *testing.T) {
 	ts := newTestBootWindowsServer()
 	defer ts.Close()
 

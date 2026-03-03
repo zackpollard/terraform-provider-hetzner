@@ -30,16 +30,16 @@ func newTestSSHKeyServer() *httptest.Server {
 		case http.MethodGet:
 			resp := []sshKeyAPIResponse{{Key: sshKey}}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		case http.MethodPost:
-			r.ParseForm()
+			_ = r.ParseForm()
 			sshKey.Name = r.FormValue("name")
 			if data := r.FormValue("data"); data != "" {
 				sshKey.Data = data
 			}
 			w.WriteHeader(http.StatusCreated)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(sshKeyAPIResponse{Key: sshKey})
+			_ = json.NewEncoder(w).Encode(sshKeyAPIResponse{Key: sshKey})
 		}
 	})
 
@@ -47,12 +47,12 @@ func newTestSSHKeyServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(sshKeyAPIResponse{Key: sshKey})
+			_ = json.NewEncoder(w).Encode(sshKeyAPIResponse{Key: sshKey})
 		case http.MethodPost:
-			r.ParseForm()
+			_ = r.ParseForm()
 			sshKey.Name = r.FormValue("name")
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(sshKeyAPIResponse{Key: sshKey})
+			_ = json.NewEncoder(w).Encode(sshKeyAPIResponse{Key: sshKey})
 		case http.MethodDelete:
 			w.WriteHeader(http.StatusOK)
 		}
@@ -61,7 +61,7 @@ func newTestSSHKeyServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccSSHKeyResource_Create(t *testing.T) {
+func TestUnitSSHKeyResource_Create(t *testing.T) {
 	server := newTestSSHKeyServer()
 	defer server.Close()
 
@@ -88,7 +88,7 @@ resource "hetzner_ssh_key" "test" {
 	})
 }
 
-func TestAccSSHKeyResource_Update(t *testing.T) {
+func TestUnitSSHKeyResource_Update(t *testing.T) {
 	server := newTestSSHKeyServer()
 	defer server.Close()
 
@@ -119,7 +119,7 @@ resource "hetzner_ssh_key" "test" {
 	})
 }
 
-func TestAccSSHKeyResource_Import(t *testing.T) {
+func TestUnitSSHKeyResource_Import(t *testing.T) {
 	server := newTestSSHKeyServer()
 	defer server.Close()
 
@@ -147,7 +147,7 @@ resource "hetzner_ssh_key" "test" {
 	})
 }
 
-func TestAccSSHKeyDataSource(t *testing.T) {
+func TestUnitSSHKeyDataSource(t *testing.T) {
 	server := newTestSSHKeyServer()
 	defer server.Close()
 
@@ -172,7 +172,7 @@ data "hetzner_ssh_key" "test" {
 	})
 }
 
-func TestAccSSHKeysDataSource(t *testing.T) {
+func TestUnitSSHKeysDataSource(t *testing.T) {
 	server := newTestSSHKeyServer()
 	defer server.Close()
 

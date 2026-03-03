@@ -17,9 +17,9 @@ func TestUnitFailoverResource_create(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/failover/192.168.1.1":
-			r.ParseForm()
+			_ = r.ParseForm()
 			activeIP = r.FormValue("active_server_ip")
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -27,7 +27,7 @@ func TestUnitFailoverResource_create(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/failover/192.168.1.1":
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -66,9 +66,9 @@ func TestUnitFailoverResource_update(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/failover/192.168.1.1":
-			r.ParseForm()
+			_ = r.ParseForm()
 			activeIP = r.FormValue("active_server_ip")
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -76,7 +76,7 @@ func TestUnitFailoverResource_update(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/failover/192.168.1.1":
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -116,7 +116,7 @@ func TestUnitFailoverResource_import(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/failover/192.168.1.1":
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -124,7 +124,7 @@ func TestUnitFailoverResource_import(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/failover/192.168.1.1":
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -162,7 +162,7 @@ func TestUnitFailoverResource_import(t *testing.T) {
 func TestUnitFailoverDataSource_read(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/failover/192.168.1.1" {
-			json.NewEncoder(w).Encode(failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode(failoverAPIResponse{
 				Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",
@@ -195,7 +195,7 @@ func TestUnitFailoverDataSource_read(t *testing.T) {
 func TestUnitFailoversDataSource_list(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/failover" {
-			json.NewEncoder(w).Encode([]failoverAPIResponse{
+			_ = json.NewEncoder(w).Encode([]failoverAPIResponse{
 				{Failover: failoverAPI{
 					IP: "192.168.1.1", Netmask: "255.255.255.255",
 					ServerIP: "10.0.0.100", ServerIPv6: "2001:db8::/64",

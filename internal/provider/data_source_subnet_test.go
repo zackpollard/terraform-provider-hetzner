@@ -15,7 +15,7 @@ import (
 func TestUnitSubnetDataSource_read(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/subnet/10.0.0.0" {
-			json.NewEncoder(w).Encode(subnetDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(subnetDetailAPIResponse{
 				Subnet: subnetDetailAPI{
 					IP: "10.0.0.0", Mask: 24, Gateway: "10.0.0.1",
 					ServerIP: "1.2.3.4", ServerNumber: 321,
@@ -52,7 +52,7 @@ func TestUnitSubnetDataSource_read(t *testing.T) {
 func TestUnitSubnetsDataSource_list(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/subnet" {
-			json.NewEncoder(w).Encode([]subnetListAPIResponse{
+			_ = json.NewEncoder(w).Encode([]subnetListAPIResponse{
 				{Subnet: subnetDetailAPI{
 					IP: "10.0.0.0", Mask: 24, Gateway: "10.0.0.1",
 					ServerIP: "1.2.3.4", ServerNumber: 321,

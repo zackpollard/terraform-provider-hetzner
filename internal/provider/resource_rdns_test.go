@@ -25,18 +25,18 @@ func newTestRDNSServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rdnsAPIResponse{Rdns: rdns})
+			_ = json.NewEncoder(w).Encode(rdnsAPIResponse{Rdns: rdns})
 		case http.MethodPut:
-			r.ParseForm()
+			_ = r.ParseForm()
 			rdns.PTR = r.FormValue("ptr")
 			w.WriteHeader(http.StatusCreated)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rdnsAPIResponse{Rdns: rdns})
+			_ = json.NewEncoder(w).Encode(rdnsAPIResponse{Rdns: rdns})
 		case http.MethodPost:
-			r.ParseForm()
+			_ = r.ParseForm()
 			rdns.PTR = r.FormValue("ptr")
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(rdnsAPIResponse{Rdns: rdns})
+			_ = json.NewEncoder(w).Encode(rdnsAPIResponse{Rdns: rdns})
 		case http.MethodDelete:
 			w.WriteHeader(http.StatusOK)
 		}
@@ -45,7 +45,7 @@ func newTestRDNSServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccRDNSResource_Create(t *testing.T) {
+func TestUnitRDNSResource_Create(t *testing.T) {
 	server := newTestRDNSServer()
 	defer server.Close()
 
@@ -70,7 +70,7 @@ resource "hetzner_rdns" "test" {
 	})
 }
 
-func TestAccRDNSResource_Update(t *testing.T) {
+func TestUnitRDNSResource_Update(t *testing.T) {
 	server := newTestRDNSServer()
 	defer server.Close()
 
@@ -101,7 +101,7 @@ resource "hetzner_rdns" "test" {
 	})
 }
 
-func TestAccRDNSResource_Import(t *testing.T) {
+func TestUnitRDNSResource_Import(t *testing.T) {
 	server := newTestRDNSServer()
 	defer server.Close()
 
@@ -129,7 +129,7 @@ resource "hetzner_rdns" "test" {
 	})
 }
 
-func TestAccRDNSDataSource(t *testing.T) {
+func TestUnitRDNSDataSource(t *testing.T) {
 	server := newTestRDNSServer()
 	defer server.Close()
 

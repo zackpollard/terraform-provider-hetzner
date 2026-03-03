@@ -42,9 +42,9 @@ func newTestFirewallServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(firewallAPIResponse{Firewall: fw})
+			_ = json.NewEncoder(w).Encode(firewallAPIResponse{Firewall: fw})
 		case http.MethodPost:
-			r.ParseForm()
+			_ = r.ParseForm()
 			if s := r.FormValue("status"); s != "" {
 				fw.Status = s
 			}
@@ -102,7 +102,7 @@ func newTestFirewallServer() *httptest.Server {
 				fw.Rules.Output = []firewallAPIRule{}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(firewallAPIResponse{Firewall: fw})
+			_ = json.NewEncoder(w).Encode(firewallAPIResponse{Firewall: fw})
 		case http.MethodDelete:
 			fw.Rules.Input = []firewallAPIRule{}
 			fw.Rules.Output = []firewallAPIRule{}
@@ -114,7 +114,7 @@ func newTestFirewallServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccFirewallResource_Create(t *testing.T) {
+func TestUnitFirewallResource_Create(t *testing.T) {
 	server := newTestFirewallServer()
 	defer server.Close()
 
@@ -153,7 +153,7 @@ resource "hetzner_firewall" "test" {
 	})
 }
 
-func TestAccFirewallResource_Update(t *testing.T) {
+func TestUnitFirewallResource_Update(t *testing.T) {
 	server := newTestFirewallServer()
 	defer server.Close()
 
@@ -204,7 +204,7 @@ resource "hetzner_firewall" "test" {
 	})
 }
 
-func TestAccFirewallResource_Import(t *testing.T) {
+func TestUnitFirewallResource_Import(t *testing.T) {
 	server := newTestFirewallServer()
 	defer server.Close()
 
@@ -241,7 +241,7 @@ resource "hetzner_firewall" "test" {
 	})
 }
 
-func TestAccFirewallDataSource(t *testing.T) {
+func TestUnitFirewallDataSource(t *testing.T) {
 	server := newTestFirewallServer()
 	defer server.Close()
 

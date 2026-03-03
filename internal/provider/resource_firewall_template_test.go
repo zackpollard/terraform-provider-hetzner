@@ -42,9 +42,9 @@ func newTestFirewallTemplateServer() *httptest.Server {
 		case http.MethodGet:
 			resp := []firewallTemplateAPIResponse{{FirewallTemplate: tmpl}}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		case http.MethodPost:
-			r.ParseForm()
+			_ = r.ParseForm()
 			tmpl.Name = r.FormValue("name")
 			if r.FormValue("filter_ipv6") == "true" {
 				tmpl.FilterIPv6 = true
@@ -85,7 +85,7 @@ func newTestFirewallTemplateServer() *httptest.Server {
 			}
 			w.WriteHeader(http.StatusCreated)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(firewallTemplateAPIResponse{FirewallTemplate: tmpl})
+			_ = json.NewEncoder(w).Encode(firewallTemplateAPIResponse{FirewallTemplate: tmpl})
 		}
 	})
 
@@ -93,9 +93,9 @@ func newTestFirewallTemplateServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(firewallTemplateAPIResponse{FirewallTemplate: tmpl})
+			_ = json.NewEncoder(w).Encode(firewallTemplateAPIResponse{FirewallTemplate: tmpl})
 		case http.MethodPost:
-			r.ParseForm()
+			_ = r.ParseForm()
 			tmpl.Name = r.FormValue("name")
 			if r.FormValue("filter_ipv6") == "true" {
 				tmpl.FilterIPv6 = true
@@ -130,7 +130,7 @@ func newTestFirewallTemplateServer() *httptest.Server {
 				tmpl.Rules.Output = []firewallAPIRule{}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(firewallTemplateAPIResponse{FirewallTemplate: tmpl})
+			_ = json.NewEncoder(w).Encode(firewallTemplateAPIResponse{FirewallTemplate: tmpl})
 		case http.MethodDelete:
 			w.WriteHeader(http.StatusOK)
 		}
@@ -139,7 +139,7 @@ func newTestFirewallTemplateServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccFirewallTemplateResource_Create(t *testing.T) {
+func TestUnitFirewallTemplateResource_Create(t *testing.T) {
 	server := newTestFirewallTemplateServer()
 	defer server.Close()
 
@@ -175,7 +175,7 @@ resource "hetzner_firewall_template" "test" {
 	})
 }
 
-func TestAccFirewallTemplateResource_Update(t *testing.T) {
+func TestUnitFirewallTemplateResource_Update(t *testing.T) {
 	server := newTestFirewallTemplateServer()
 	defer server.Close()
 
@@ -224,7 +224,7 @@ resource "hetzner_firewall_template" "test" {
 	})
 }
 
-func TestAccFirewallTemplateResource_Import(t *testing.T) {
+func TestUnitFirewallTemplateResource_Import(t *testing.T) {
 	server := newTestFirewallTemplateServer()
 	defer server.Close()
 
@@ -259,7 +259,7 @@ resource "hetzner_firewall_template" "test" {
 	})
 }
 
-func TestAccFirewallTemplateDataSource(t *testing.T) {
+func TestUnitFirewallTemplateDataSource(t *testing.T) {
 	server := newTestFirewallTemplateServer()
 	defer server.Close()
 
@@ -284,7 +284,7 @@ data "hetzner_firewall_template" "test" {
 	})
 }
 
-func TestAccFirewallTemplatesDataSource(t *testing.T) {
+func TestUnitFirewallTemplatesDataSource(t *testing.T) {
 	server := newTestFirewallTemplateServer()
 	defer server.Close()
 

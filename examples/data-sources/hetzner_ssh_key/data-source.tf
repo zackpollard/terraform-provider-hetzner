@@ -1,0 +1,3 @@
+data "hetzner_ssh_key" "example" {
+  fingerprint = "ab:cd:ef:01:23:45:67:89:ab:cd:ef:01:23:45:67:89"
+}

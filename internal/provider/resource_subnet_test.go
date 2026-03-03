@@ -22,24 +22,24 @@ func TestUnitSubnetResource_create(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/subnet/10.0.0.0":
-			r.ParseForm()
+			_ = r.ParseForm()
 			if v := r.FormValue("traffic_warnings"); v == "true" {
 				trafficWarnings = true
 			} else {
 				trafficWarnings = false
 			}
 			if v := r.FormValue("traffic_hourly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficHourly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficHourly)
 			}
 			if v := r.FormValue("traffic_daily"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficDaily)
+				_, _ = fmt.Sscanf(v, "%d", &trafficDaily)
 			}
 			if v := r.FormValue("traffic_monthly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficMonthly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficMonthly)
 			}
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/subnet/10.0.0.0":
-			json.NewEncoder(w).Encode(subnetDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(subnetDetailAPIResponse{
 				Subnet: subnetDetailAPI{
 					IP: "10.0.0.0", Mask: 24, Gateway: "10.0.0.1",
 					ServerIP: "1.2.3.4", ServerNumber: 321,
@@ -86,24 +86,24 @@ func TestUnitSubnetResource_update(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/subnet/10.0.0.0":
-			r.ParseForm()
+			_ = r.ParseForm()
 			if v := r.FormValue("traffic_warnings"); v == "true" {
 				trafficWarnings = true
 			} else if v == "false" {
 				trafficWarnings = false
 			}
 			if v := r.FormValue("traffic_hourly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficHourly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficHourly)
 			}
 			if v := r.FormValue("traffic_daily"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficDaily)
+				_, _ = fmt.Sscanf(v, "%d", &trafficDaily)
 			}
 			if v := r.FormValue("traffic_monthly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficMonthly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficMonthly)
 			}
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/subnet/10.0.0.0":
-			json.NewEncoder(w).Encode(subnetDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(subnetDetailAPIResponse{
 				Subnet: subnetDetailAPI{
 					IP: "10.0.0.0", Mask: 24, Gateway: "10.0.0.1",
 					ServerIP: "1.2.3.4", ServerNumber: 321,
@@ -154,7 +154,7 @@ func TestUnitSubnetResource_import(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/subnet/10.0.0.0":
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/subnet/10.0.0.0":
-			json.NewEncoder(w).Encode(subnetDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(subnetDetailAPIResponse{
 				Subnet: subnetDetailAPI{
 					IP: "10.0.0.0", Mask: 24, Gateway: "10.0.0.1",
 					ServerIP: "1.2.3.4", ServerNumber: 321,

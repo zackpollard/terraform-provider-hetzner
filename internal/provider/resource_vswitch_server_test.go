@@ -17,7 +17,7 @@ func TestUnitVSwitchServerResource_create(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/vswitch/123/server":
-			r.ParseForm()
+			_ = r.ParseForm()
 			servers = append(servers, vSwitchServerEntry{
 				ServerNumber: 321,
 				ServerIP:     "1.2.3.4",
@@ -26,7 +26,7 @@ func TestUnitVSwitchServerResource_create(t *testing.T) {
 			})
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/vswitch/123":
-			json.NewEncoder(w).Encode(vSwitchDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchDetailAPIResponse{
 				ID: 123, Name: "test-vs", Vlan: 4000, Cancelled: false,
 				Server: servers,
 			})
@@ -63,7 +63,7 @@ func TestUnitVSwitchServerResource_import(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/vswitch/123/server":
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/vswitch/123":
-			json.NewEncoder(w).Encode(vSwitchDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchDetailAPIResponse{
 				ID: 123, Name: "test-vs", Vlan: 4000, Cancelled: false,
 				Server: []vSwitchServerEntry{
 					{ServerNumber: 321, ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64", Status: "ready"},

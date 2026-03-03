@@ -458,7 +458,7 @@ func (r *firewallResource) Delete(ctx context.Context, req resource.DeleteReques
 	form.Set("status", "disabled")
 	form.Set("whitelist_hos", "true")
 	// Use retry to handle FIREWALL_IN_PROCESS errors.
-	r.postWithRetry(ctx, "/firewall/"+serverNum, form)
+	_, _ = r.postWithRetry(ctx, "/firewall/"+serverNum, form)
 }
 
 // postWithRetry retries POST requests on FIREWALL_IN_PROCESS (409) errors.

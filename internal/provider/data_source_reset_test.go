@@ -17,7 +17,7 @@ func newTestResetServer() *httptest.Server {
 
 	mux.HandleFunc("/reset/123", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"reset": map[string]interface{}{
 				"server_ip":        "1.2.3.4",
 				"server_ipv6_net":  "2a01:4f8::/64",
@@ -31,7 +31,7 @@ func newTestResetServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccResetDataSource(t *testing.T) {
+func TestUnitResetDataSource(t *testing.T) {
 	ts := newTestResetServer()
 	defer ts.Close()
 

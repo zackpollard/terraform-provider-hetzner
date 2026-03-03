@@ -15,7 +15,7 @@ import (
 func TestUnitIPDataSource_read(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/ip/1.2.3.4" {
-			json.NewEncoder(w).Encode(ipDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(ipDetailAPIResponse{
 				IP: ipDetailAPI{
 					IP: "1.2.3.4", ServerIP: "10.0.0.1", ServerNumber: 321,
 					Locked: false, SeparateMAC: nil, TrafficWarnings: true,
@@ -55,7 +55,7 @@ func TestUnitIPsDataSource_list(t *testing.T) {
 	mac := "aa:bb:cc:dd:ee:ff"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/ip" {
-			json.NewEncoder(w).Encode([]ipListAPIResponse{
+			_ = json.NewEncoder(w).Encode([]ipListAPIResponse{
 				{IP: ipListAPI{
 					IP: "1.2.3.4", ServerIP: "10.0.0.1", ServerNumber: 321,
 					Locked: false, SeparateMAC: nil, TrafficWarnings: true,

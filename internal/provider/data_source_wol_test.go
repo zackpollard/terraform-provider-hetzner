@@ -17,7 +17,7 @@ func newTestWOLServer() *httptest.Server {
 
 	mux.HandleFunc("/wol/123", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"wol": map[string]interface{}{
 				"server_ip":       "1.2.3.4",
 				"server_ipv6_net": "2a01:4f8::/64",
@@ -29,7 +29,7 @@ func newTestWOLServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccWOLDataSource(t *testing.T) {
+func TestUnitWOLDataSource(t *testing.T) {
 	ts := newTestWOLServer()
 	defer ts.Close()
 

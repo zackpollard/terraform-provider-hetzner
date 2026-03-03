@@ -339,21 +339,6 @@ resource "hetzner_ssh_key" "test" {
 `, name, publicKey)
 }
 
-func testAccSSHKeyDataSourceConfig(fingerprint string) string {
-	return fmt.Sprintf(`
-data "hetzner_ssh_key" "test" {
-  fingerprint = %q
-}
-`, fingerprint)
-}
-
-func testAccSSHKeysDataSourceConfig() string {
-	return `
-data "hetzner_ssh_keys" "test" {
-}
-`
-}
-
 func testAccRDNSConfig(ip, ptr string) string {
 	return fmt.Sprintf(`
 resource "hetzner_rdns" "test" {
@@ -477,14 +462,6 @@ resource "hetzner_firewall_template" "test" {
 `, name)
 }
 
-func testAccFirewallTemplateDataSourceConfig(templateID string) string {
-	return fmt.Sprintf(`
-data "hetzner_firewall_template" "test" {
-  id = %s
-}
-`, templateID)
-}
-
 func testAccFirewallTemplatesDataSourceConfig() string {
 	return `
 data "hetzner_firewall_templates" "test" {
@@ -580,14 +557,6 @@ resource "hetzner_vswitch" "test" {
 `, name, vlan)
 }
 
-func testAccVSwitchDataSourceConfig(vswitchID string) string {
-	return fmt.Sprintf(`
-data "hetzner_vswitch" "test" {
-  id = %s
-}
-`, vswitchID)
-}
-
 func testAccVSwitchesDataSourceConfig() string {
 	return `
 data "hetzner_vswitches" "test" {
@@ -631,14 +600,6 @@ data "hetzner_boot_linux" "test" {
 func testAccBootVNCDataSourceConfig(serverNumber string) string {
 	return fmt.Sprintf(`
 data "hetzner_boot_vnc" "test" {
-  server_number = %s
-}
-`, serverNumber)
-}
-
-func testAccBootWindowsDataSourceConfig(serverNumber string) string {
-	return fmt.Sprintf(`
-data "hetzner_boot_windows" "test" {
   server_number = %s
 }
 `, serverNumber)

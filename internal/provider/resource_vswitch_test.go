@@ -20,11 +20,11 @@ func TestUnitVSwitchResource_create(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/vswitch":
 			created = true
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: "test-vswitch", Vlan: 4000, Cancelled: false,
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/vswitch/123":
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: "test-vswitch", Vlan: 4000, Cancelled: false,
 			})
 		case r.Method == http.MethodDelete && r.URL.Path == "/vswitch/123":
@@ -64,20 +64,20 @@ func TestUnitVSwitchResource_update(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/vswitch":
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: "test-vswitch", Vlan: 4000, Cancelled: false,
 			})
 		case r.Method == http.MethodPost && r.URL.Path == "/vswitch/123":
-			r.ParseForm()
+			_ = r.ParseForm()
 			if name := r.FormValue("name"); name != "" {
 				currentName = name
 			}
 			if vlan := r.FormValue("vlan"); vlan != "" {
-				fmt.Sscanf(vlan, "%d", &currentVlan)
+				_, _ = fmt.Sscanf(vlan, "%d", &currentVlan)
 			}
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/vswitch/123":
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: currentName, Vlan: currentVlan, Cancelled: false,
 			})
 		case r.Method == http.MethodDelete && r.URL.Path == "/vswitch/123":
@@ -117,11 +117,11 @@ func TestUnitVSwitchResource_import(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/vswitch":
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: "test-vswitch", Vlan: 4000, Cancelled: false,
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/vswitch/123":
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: "test-vswitch", Vlan: 4000, Cancelled: false,
 			})
 		case r.Method == http.MethodDelete && r.URL.Path == "/vswitch/123":
@@ -154,7 +154,7 @@ func TestUnitVSwitchResource_import(t *testing.T) {
 func TestUnitVSwitchDataSource_read(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/vswitch/123" {
-			json.NewEncoder(w).Encode(vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode(vSwitchAPIResponse{
 				ID: 123, Name: "test-vswitch", Vlan: 4000, Cancelled: false,
 			})
 		} else {
@@ -183,7 +183,7 @@ func TestUnitVSwitchDataSource_read(t *testing.T) {
 func TestUnitVSwitchesDataSource_list(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/vswitch" {
-			json.NewEncoder(w).Encode([]vSwitchAPIResponse{
+			_ = json.NewEncoder(w).Encode([]vSwitchAPIResponse{
 				{ID: 1, Name: "vs1", Vlan: 4000, Cancelled: false},
 				{ID: 2, Name: "vs2", Vlan: 4001, Cancelled: false},
 			})

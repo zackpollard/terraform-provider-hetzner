@@ -97,7 +97,7 @@ func (ms *MockServer) handler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(route.StatusCode)
 
 	if route.Response != nil {
-		json.NewEncoder(w).Encode(route.Response)
+		_ = json.NewEncoder(w).Encode(route.Response)
 	}
 }
 
@@ -105,7 +105,7 @@ func (ms *MockServer) handler(w http.ResponseWriter, r *http.Request) {
 func writeErrorResponse(w http.ResponseWriter, statusCode int, code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": map[string]interface{}{
 			"status":  statusCode,
 			"code":    code,

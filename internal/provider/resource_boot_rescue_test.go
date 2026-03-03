@@ -23,7 +23,7 @@ func newTestBootRescueServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodPost:
 			active = true
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"rescue": map[string]interface{}{
 					"server_ip":       "1.2.3.4",
 					"server_ipv6_net": "2a01:4f8::/64",
@@ -36,7 +36,7 @@ func newTestBootRescueServer() *httptest.Server {
 			})
 		case http.MethodGet:
 			if active {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"rescue": map[string]interface{}{
 						"server_ip":       "1.2.3.4",
 						"server_ipv6_net": "2a01:4f8::/64",
@@ -48,7 +48,7 @@ func newTestBootRescueServer() *httptest.Server {
 					},
 				})
 			} else {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"rescue": map[string]interface{}{
 						"server_ip":       "1.2.3.4",
 						"server_ipv6_net": "2a01:4f8::/64",
@@ -62,7 +62,7 @@ func newTestBootRescueServer() *httptest.Server {
 			}
 		case http.MethodDelete:
 			active = false
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"rescue": map[string]interface{}{
 					"server_ip":       "1.2.3.4",
 					"server_ipv6_net": "2a01:4f8::/64",
@@ -78,7 +78,7 @@ func newTestBootRescueServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccBootRescueResource_Create(t *testing.T) {
+func TestUnitBootRescueResource_Create(t *testing.T) {
 	ts := newTestBootRescueServer()
 	defer ts.Close()
 
@@ -102,7 +102,7 @@ resource "hetzner_boot_rescue" "test" {
 	})
 }
 
-func TestAccBootRescueResource_Import(t *testing.T) {
+func TestUnitBootRescueResource_Import(t *testing.T) {
 	ts := newTestBootRescueServer()
 	defer ts.Close()
 
@@ -126,7 +126,7 @@ resource "hetzner_boot_rescue" "test" {
 	})
 }
 
-func TestAccBootRescueDataSource(t *testing.T) {
+func TestUnitBootRescueDataSource(t *testing.T) {
 	ts := newTestBootRescueServer()
 	defer ts.Close()
 

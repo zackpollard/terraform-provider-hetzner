@@ -22,24 +22,24 @@ func TestUnitIPResource_create(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/ip/1.2.3.4":
-			r.ParseForm()
+			_ = r.ParseForm()
 			if v := r.FormValue("traffic_warnings"); v == "true" {
 				trafficWarnings = true
 			} else {
 				trafficWarnings = false
 			}
 			if v := r.FormValue("traffic_hourly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficHourly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficHourly)
 			}
 			if v := r.FormValue("traffic_daily"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficDaily)
+				_, _ = fmt.Sscanf(v, "%d", &trafficDaily)
 			}
 			if v := r.FormValue("traffic_monthly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficMonthly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficMonthly)
 			}
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/ip/1.2.3.4":
-			json.NewEncoder(w).Encode(ipDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(ipDetailAPIResponse{
 				IP: ipDetailAPI{
 					IP: "1.2.3.4", ServerIP: "10.0.0.1", ServerNumber: 321,
 					Locked: false, SeparateMAC: nil,
@@ -88,24 +88,24 @@ func TestUnitIPResource_update(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/ip/1.2.3.4":
-			r.ParseForm()
+			_ = r.ParseForm()
 			if v := r.FormValue("traffic_warnings"); v == "true" {
 				trafficWarnings = true
 			} else if v == "false" {
 				trafficWarnings = false
 			}
 			if v := r.FormValue("traffic_hourly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficHourly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficHourly)
 			}
 			if v := r.FormValue("traffic_daily"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficDaily)
+				_, _ = fmt.Sscanf(v, "%d", &trafficDaily)
 			}
 			if v := r.FormValue("traffic_monthly"); v != "" {
-				fmt.Sscanf(v, "%d", &trafficMonthly)
+				_, _ = fmt.Sscanf(v, "%d", &trafficMonthly)
 			}
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/ip/1.2.3.4":
-			json.NewEncoder(w).Encode(ipDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(ipDetailAPIResponse{
 				IP: ipDetailAPI{
 					IP: "1.2.3.4", ServerIP: "10.0.0.1", ServerNumber: 321,
 					Locked: false, SeparateMAC: nil,
@@ -158,7 +158,7 @@ func TestUnitIPResource_import(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/ip/1.2.3.4":
 			w.WriteHeader(http.StatusOK)
 		case r.Method == http.MethodGet && r.URL.Path == "/ip/1.2.3.4":
-			json.NewEncoder(w).Encode(ipDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(ipDetailAPIResponse{
 				IP: ipDetailAPI{
 					IP: "1.2.3.4", ServerIP: "10.0.0.1", ServerNumber: 321,
 					Locked: false, SeparateMAC: nil,

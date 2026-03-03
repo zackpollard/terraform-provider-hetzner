@@ -17,9 +17,9 @@ func TestUnitServerResource_create(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/server/321":
-			r.ParseForm()
+			_ = r.ParseForm()
 			serverName = r.FormValue("server_name")
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: serverName,
@@ -29,7 +29,7 @@ func TestUnitServerResource_create(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/server/321":
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: serverName,
@@ -70,9 +70,9 @@ func TestUnitServerResource_update(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/server/321":
-			r.ParseForm()
+			_ = r.ParseForm()
 			serverName = r.FormValue("server_name")
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: serverName,
@@ -82,7 +82,7 @@ func TestUnitServerResource_update(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/server/321":
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: serverName,
@@ -122,7 +122,7 @@ func TestUnitServerResource_import(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/server/321":
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: "my-server",
@@ -132,7 +132,7 @@ func TestUnitServerResource_import(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/server/321":
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: "my-server",
@@ -170,7 +170,7 @@ func TestUnitServerResource_import(t *testing.T) {
 func TestUnitServerDataSource_read(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/server/321" {
-			json.NewEncoder(w).Encode(serverDetailAPIResponse{
+			_ = json.NewEncoder(w).Encode(serverDetailAPIResponse{
 				Server: serverDetailAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64",
 					ServerNumber: 321, ServerName: "my-server",
@@ -205,7 +205,7 @@ func TestUnitServerDataSource_read(t *testing.T) {
 func TestUnitServersDataSource_list(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/server" {
-			json.NewEncoder(w).Encode([]serverListAPIResponse{
+			_ = json.NewEncoder(w).Encode([]serverListAPIResponse{
 				{Server: serverListAPI{
 					ServerIP: "1.2.3.4", ServerIPv6: "2001:db8::/64", ServerNumber: 321,
 					ServerName: "server-1", Product: "DS 3000", DC: "FSN1-DC14",

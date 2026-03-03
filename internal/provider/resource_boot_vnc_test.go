@@ -21,7 +21,7 @@ func newTestBootVNCServer() *httptest.Server {
 		switch r.Method {
 		case http.MethodPost:
 			active = true
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"vnc": map[string]interface{}{
 					"server_ip":       "1.2.3.4",
 					"server_ipv6_net": "2a01:4f8::/64",
@@ -34,7 +34,7 @@ func newTestBootVNCServer() *httptest.Server {
 			})
 		case http.MethodGet:
 			if active {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"vnc": map[string]interface{}{
 						"server_ip":       "1.2.3.4",
 						"server_ipv6_net": "2a01:4f8::/64",
@@ -46,7 +46,7 @@ func newTestBootVNCServer() *httptest.Server {
 					},
 				})
 			} else {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"vnc": map[string]interface{}{
 						"server_ip":       "1.2.3.4",
 						"server_ipv6_net": "2a01:4f8::/64",
@@ -61,7 +61,7 @@ func newTestBootVNCServer() *httptest.Server {
 		case http.MethodDelete:
 			active = false
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"vnc": map[string]interface{}{
 					"server_ip":       "1.2.3.4",
 					"server_ipv6_net": "2a01:4f8::/64",
@@ -76,7 +76,7 @@ func newTestBootVNCServer() *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-func TestAccBootVNCResource_Create(t *testing.T) {
+func TestUnitBootVNCResource_Create(t *testing.T) {
 	ts := newTestBootVNCServer()
 	defer ts.Close()
 
@@ -101,7 +101,7 @@ resource "hetzner_boot_vnc" "test" {
 	})
 }
 
-func TestAccBootVNCDataSource(t *testing.T) {
+func TestUnitBootVNCDataSource(t *testing.T) {
 	ts := newTestBootVNCServer()
 	defer ts.Close()
 
