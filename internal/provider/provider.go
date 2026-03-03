@@ -1,108 +1,165 @@
-// Copyright IBM Corp. 2021, 2025
+// Copyright (c) Zack
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
 
 import (
 	"context"
-	"net/http"
+	"os"
 
-	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
-	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/zack/terraform-provider-hetzner/internal/client"
 )
 
-// Ensure ScaffoldingProvider satisfies various provider interfaces.
-var _ provider.Provider = &ScaffoldingProvider{}
-var _ provider.ProviderWithFunctions = &ScaffoldingProvider{}
-var _ provider.ProviderWithEphemeralResources = &ScaffoldingProvider{}
-var _ provider.ProviderWithActions = &ScaffoldingProvider{}
+var _ provider.Provider = &HetznerProvider{}
 
-// ScaffoldingProvider defines the provider implementation.
-type ScaffoldingProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
+// HetznerProvider defines the provider implementation.
+type HetznerProvider struct {
 	version string
 }
 
-// ScaffoldingProviderModel describes the provider data model.
-type ScaffoldingProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
+// HetznerProviderModel describes the provider data model.
+type HetznerProviderModel struct {
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
 }
 
-func (p *ScaffoldingProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "scaffolding"
+func (p *HetznerProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "hetzner"
 	resp.Version = p.version
 }
 
-func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *HetznerProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "The Hetzner provider allows managing resources in the Hetzner Robot API.",
 		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Example provider attribute",
+			"username": schema.StringAttribute{
+				MarkdownDescription: "Username for Hetzner Robot API. Can also be set via the `HETZNER_ROBOT_USERNAME` environment variable.",
 				Optional:            true,
+				Sensitive:           true,
+			},
+			"password": schema.StringAttribute{
+				MarkdownDescription: "Password for Hetzner Robot API. Can also be set via the `HETZNER_ROBOT_PASSWORD` environment variable.",
+				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}
 }
 
-func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data ScaffoldingProviderModel
+func (p *HetznerProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data HetznerProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Resolve username: config takes precedence over environment variable.
+	username := os.Getenv("HETZNER_ROBOT_USERNAME")
+	if !data.Username.IsNull() {
+		username = data.Username.ValueString()
+	}
+
+	password := os.Getenv("HETZNER_ROBOT_PASSWORD")
+	if !data.Password.IsNull() {
+		password = data.Password.ValueString()
+	}
+
+	if username == "" {
+		resp.Diagnostics.AddError(
+			"Missing Hetzner Robot Username",
+			"The provider requires a username for the Hetzner Robot API. "+
+				"Set the username in the provider configuration or via the HETZNER_ROBOT_USERNAME environment variable.",
+		)
+	}
+
+	if password == "" {
+		resp.Diagnostics.AddError(
+			"Missing Hetzner Robot Password",
+			"The provider requires a password for the Hetzner Robot API. "+
+				"Set the password in the provider configuration or via the HETZNER_ROBOT_PASSWORD environment variable.",
+		)
+	}
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
+	c := client.NewClient(username, password)
 
-	// Example client configuration for data sources and resources
-	client := http.DefaultClient
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	resp.DataSourceData = c
+	resp.ResourceData = c
 }
 
-func (p *ScaffoldingProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *HetznerProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		// Batch 1: SSH keys, rDNS, firewall
+		NewSSHKeyResource,
+		NewRDNSResource,
+		NewFirewallResource,
+		NewFirewallTemplateResource,
+		// Batch 2: vSwitch, server, IP, subnet, failover
+		NewVSwitchResource,
+		NewVSwitchServerResource,
+		NewServerResource,
+		NewIPResource,
+		NewSubnetResource,
+		NewFailoverResource,
+		// Batch 3: boot configs, storage box
+		NewBootRescueResource,
+		NewBootLinuxResource,
+		NewBootVNCResource,
+		NewBootWindowsResource,
+		NewStorageboxResource,
+		NewStorageboxSnapshotResource,
+		NewStorageboxSnapshotplanResource,
+		NewStorageboxSubaccountResource,
 	}
 }
 
-func (p *ScaffoldingProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
-	return []func() ephemeral.EphemeralResource{
-		NewExampleEphemeralResource,
-	}
-}
-
-func (p *ScaffoldingProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *HetznerProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewExampleDataSource,
-	}
-}
-
-func (p *ScaffoldingProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewExampleFunction,
-	}
-}
-
-func (p *ScaffoldingProvider) Actions(ctx context.Context) []func() action.Action {
-	return []func() action.Action{
-		NewExampleAction,
+		// Batch 1: SSH keys, rDNS, firewall
+		NewSSHKeyDataSource,
+		NewSSHKeysDataSource,
+		NewRDNSDataSource,
+		NewFirewallDataSource,
+		NewFirewallTemplateDataSource,
+		NewFirewallTemplatesDataSource,
+		// Batch 2: vSwitch, server, IP, subnet, failover
+		NewVSwitchDataSource,
+		NewVSwitchesDataSource,
+		NewServerDataSource,
+		NewServersDataSource,
+		NewIPDataSource,
+		NewIPsDataSource,
+		NewSubnetDataSource,
+		NewSubnetsDataSource,
+		NewFailoverDataSource,
+		NewFailoversDataSource,
+		// Batch 3: boot configs, storage box, reset, WoL
+		NewBootRescueDataSource,
+		NewBootLinuxDataSource,
+		NewBootVNCDataSource,
+		NewBootWindowsDataSource,
+		NewStorageboxDataSource,
+		NewStorageboxesDataSource,
+		NewStorageboxSnapshotDataSource,
+		NewStorageboxSnapshotplanDataSource,
+		NewStorageboxSubaccountDataSource,
+		NewResetDataSource,
+		NewWOLDataSource,
 	}
 }
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &ScaffoldingProvider{
+		return &HetznerProvider{
 			version: version,
 		}
 	}
