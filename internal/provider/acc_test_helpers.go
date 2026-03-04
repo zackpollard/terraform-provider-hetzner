@@ -208,11 +208,12 @@ func testAccOrderServer(t *testing.T) (string, error) {
 		return "", fmt.Errorf("no SSH keys found on the account; upload one before ordering a server")
 	}
 
-	// Order the server via the Robot API.
-	t.Logf("Ordering server market product %s via Robot API", productID)
+	// Order the server via the Robot API with IPv4 addon.
+	t.Logf("Ordering server market product %s via Robot API (with IPv4 addon)", productID)
 	form := url.Values{}
 	form.Set("product_id", productID)
 	form.Add("authorized_key[]", keyFingerprint)
+	form.Add("addon[]", "primary_ipv4")
 
 	body, err := c.Post("/order/server_market/transaction", form)
 	if err != nil {

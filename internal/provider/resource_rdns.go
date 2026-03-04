@@ -91,7 +91,9 @@ func (r *rdnsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	form := url.Values{}
 	form.Set("ptr", data.PTR.ValueString())
 
-	body, err := r.client.Put("/rdns/"+url.PathEscape(data.IP.ValueString()), form)
+	// Use POST (not PUT) because servers may already have a default rDNS entry.
+	// PUT returns 409 RDNS_ALREADY_EXISTS, while POST creates or updates.
+	body, err := r.client.Post("/rdns/"+url.PathEscape(data.IP.ValueString()), form)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating rDNS entry", err.Error())
 		return
