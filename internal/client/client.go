@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -77,8 +78,23 @@ func (c *Client) DeleteWithBody(path string, data url.Values) ([]byte, error) {
 	return c.doRequest(http.MethodDelete, path, data)
 }
 
+// GetWithContext performs a GET request with context support.
+func (c *Client) GetWithContext(ctx context.Context, path string) ([]byte, error) {
+	return c.doRequestWithContext(ctx, http.MethodGet, path, nil)
+}
+
+// PostWithContext performs a POST request with context support.
+func (c *Client) PostWithContext(ctx context.Context, path string, data url.Values) ([]byte, error) {
+	return c.doRequestWithContext(ctx, http.MethodPost, path, data)
+}
+
 // doRequest executes an HTTP request with basic auth and handles error responses.
 func (c *Client) doRequest(method, path string, data url.Values) ([]byte, error) {
+	return c.doRequestWithContext(context.Background(), method, path, data)
+}
+
+// doRequestWithContext executes an HTTP request with context and basic auth, and handles error responses.
+func (c *Client) doRequestWithContext(ctx context.Context, method, path string, data url.Values) ([]byte, error) {
 	reqURL := c.BaseURL + path
 
 	var body io.Reader
@@ -86,7 +102,7 @@ func (c *Client) doRequest(method, path string, data url.Values) ([]byte, error)
 		body = strings.NewReader(data.Encode())
 	}
 
-	req, err := http.NewRequest(method, reqURL, body)
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, body)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}

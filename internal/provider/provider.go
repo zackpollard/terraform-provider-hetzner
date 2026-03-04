@@ -110,6 +110,9 @@ func (p *HetznerProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewIPResource,
 		NewSubnetResource,
 		NewFailoverResource,
+		// Batch 4: server ordering
+		NewServerOrderResource,
+		NewServerAddonResource,
 		// Batch 3: boot configs
 		NewBootRescueResource,
 		NewBootLinuxResource,
@@ -138,6 +141,10 @@ func (p *HetznerProvider) DataSources(ctx context.Context) []func() datasource.D
 		NewSubnetsDataSource,
 		NewFailoverDataSource,
 		NewFailoversDataSource,
+		// Batch 4: order/market products, server addons
+		NewServerOrderProductsDataSource,
+		NewServerMarketProductsDataSource,
+		NewServerAddonsDataSource,
 		// Batch 3: boot configs, reset, WoL
 		NewBootRescueDataSource,
 		NewBootLinuxDataSource,

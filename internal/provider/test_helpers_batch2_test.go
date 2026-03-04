@@ -64,6 +64,8 @@ func (p *batch2TestProvider) Resources(_ context.Context) []func() resource.Reso
 		NewIPResource,
 		NewSubnetResource,
 		NewFailoverResource,
+		NewServerOrderResource,
+		NewServerAddonResource,
 	}
 }
 
@@ -79,5 +81,8 @@ func (p *batch2TestProvider) DataSources(_ context.Context) []func() datasource.
 		NewSubnetsDataSource,
 		NewFailoverDataSource,
 		NewFailoversDataSource,
+		NewServerOrderProductsDataSource,
+		NewServerMarketProductsDataSource,
+		NewServerAddonsDataSource,
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -35,16 +36,19 @@ type serverResource struct {
 }
 
 type serverResourceModel struct {
-	ServerNumber types.Int64  `tfsdk:"server_number"`
-	ServerName   types.String `tfsdk:"server_name"`
-	ServerIP     types.String `tfsdk:"server_ip"`
-	ServerIPv6   types.String `tfsdk:"server_ipv6_net"`
-	Product      types.String `tfsdk:"product"`
-	DC           types.String `tfsdk:"dc"`
-	Traffic      types.String `tfsdk:"traffic"`
-	Status       types.String `tfsdk:"status"`
-	Cancelled    types.Bool   `tfsdk:"cancelled"`
-	PaidUntil    types.String `tfsdk:"paid_until"`
+	ServerNumber             types.Int64  `tfsdk:"server_number"`
+	ServerName               types.String `tfsdk:"server_name"`
+	ServerIP                 types.String `tfsdk:"server_ip"`
+	ServerIPv6               types.String `tfsdk:"server_ipv6_net"`
+	Product                  types.String `tfsdk:"product"`
+	DC                       types.String `tfsdk:"dc"`
+	Traffic                  types.String `tfsdk:"traffic"`
+	Status                   types.String `tfsdk:"status"`
+	Cancelled                types.Bool   `tfsdk:"cancelled"`
+	PaidUntil                types.String `tfsdk:"paid_until"`
+	CancellationDate         types.String `tfsdk:"cancellation_date"`
+	ReserveLocation          types.Bool   `tfsdk:"reserve_location"`
+	EarliestCancellationDate types.String `tfsdk:"earliest_cancellation_date"`
 }
 
 type serverDetailAPIResponse struct {
@@ -62,6 +66,20 @@ type serverDetailAPI struct {
 	Status       string `json:"status"`
 	Cancelled    bool   `json:"cancelled"`
 	PaidUntil    string `json:"paid_until"`
+}
+
+type serverCancellationAPIResponse struct {
+	Cancellation serverCancellationAPI `json:"cancellation"`
+}
+
+type serverCancellationAPI struct {
+	ServerIP                 string  `json:"server_ip"`
+	ServerNumber             int     `json:"server_number"`
+	EarliestCancellationDate string  `json:"earliest_cancellation_date"`
+	Cancelled                bool    `json:"cancelled"`
+	ReservationPossible      bool    `json:"reservation_possible"`
+	Reserved                 bool    `json:"reserved"`
+	CancellationDate         *string `json:"cancellation_date"`
 }
 
 func (r *serverResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -130,6 +148,20 @@ func (r *serverResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				MarkdownDescription: "Date the server is paid until.",
 				Computed:            true,
 			},
+			"cancellation_date": schema.StringAttribute{
+				MarkdownDescription: "The cancellation date for the server (YYYY-MM-DD or \"now\"). Set to schedule cancellation, remove to revoke.",
+				Optional:            true,
+			},
+			"reserve_location": schema.BoolAttribute{
+				MarkdownDescription: "Whether to reserve the server location on cancellation.",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+			},
+			"earliest_cancellation_date": schema.StringAttribute{
+				MarkdownDescription: "The earliest possible cancellation date.",
+				Computed:            true,
+			},
 		},
 	}
 }
@@ -163,6 +195,14 @@ func (r *serverResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// Schedule cancellation if requested.
+	if !data.CancellationDate.IsNull() {
+		r.setCancellation(&data, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	// Read back the full server details.
 	r.readServer(&data, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -188,32 +228,77 @@ func (r *serverResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (r *serverResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data serverResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	var plan serverResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var state serverResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	params := url.Values{}
-	params.Set("server_name", data.ServerName.ValueString())
+	params.Set("server_name", plan.ServerName.ValueString())
 
-	_, err := r.client.Post(fmt.Sprintf("/server/%d", data.ServerNumber.ValueInt64()), params)
+	_, err := r.client.Post(fmt.Sprintf("/server/%d", plan.ServerNumber.ValueInt64()), params)
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating server name", err.Error())
 		return
 	}
 
-	r.readServer(&data, &resp.Diagnostics)
+	// Handle cancellation changes.
+	planHasCancel := !plan.CancellationDate.IsNull()
+	stateHasCancel := !state.CancellationDate.IsNull()
+
+	switch {
+	case planHasCancel && !stateHasCancel:
+		// Schedule new cancellation.
+		r.setCancellation(&plan, &resp.Diagnostics)
+	case planHasCancel && stateHasCancel && plan.CancellationDate.ValueString() != state.CancellationDate.ValueString():
+		// Change cancellation date: revoke then re-schedule.
+		r.revokeCancellation(&plan, &resp.Diagnostics)
+		if !resp.Diagnostics.HasError() {
+			r.setCancellation(&plan, &resp.Diagnostics)
+		}
+	case !planHasCancel && stateHasCancel:
+		// Revoke cancellation.
+		r.revokeCancellation(&plan, &resp.Diagnostics)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.readServer(&plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *serverResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Servers cannot be deleted via API. We just remove from state.
-	// Optionally we could clear the server name, but the API doesn't support that.
+	var data serverResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Schedule immediate cancellation.
+	cancelParams := url.Values{}
+	cancelParams.Set("cancellation_date", "now")
+
+	_, err := r.client.Post(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()), cancelParams)
+	if err != nil {
+		// Ignore 409 (already cancelled).
+		if apiErr, ok := err.(*client.APIError); ok && apiErr.StatusCode == 409 {
+			return
+		}
+		resp.Diagnostics.AddError("Error cancelling server", err.Error())
+		return
+	}
 }
 
 func (r *serverResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -249,4 +334,47 @@ func (r *serverResource) readServer(data *serverResourceModel, diags *diag.Diagn
 	data.Status = types.StringValue(s.Status)
 	data.Cancelled = types.BoolValue(s.Cancelled)
 	data.PaidUntil = types.StringValue(s.PaidUntil)
+
+	// Read cancellation state.
+	cancelBody, err := r.client.Get(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()))
+	if err != nil {
+		diags.AddError("Error reading server cancellation", err.Error())
+		return
+	}
+
+	var cancelResp serverCancellationAPIResponse
+	if err := json.Unmarshal(cancelBody, &cancelResp); err != nil {
+		diags.AddError("Error parsing server cancellation response", err.Error())
+		return
+	}
+
+	c := cancelResp.Cancellation
+	data.EarliestCancellationDate = types.StringValue(c.EarliestCancellationDate)
+	if c.CancellationDate != nil {
+		data.CancellationDate = types.StringValue(*c.CancellationDate)
+	} else {
+		data.CancellationDate = types.StringNull()
+	}
+}
+
+func (r *serverResource) setCancellation(data *serverResourceModel, diags *diag.Diagnostics) {
+	params := url.Values{}
+	params.Set("cancellation_date", data.CancellationDate.ValueString())
+	if data.ReserveLocation.ValueBool() {
+		params.Set("reserve_location", "true")
+	}
+
+	_, err := r.client.Post(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()), params)
+	if err != nil {
+		diags.AddError("Error scheduling server cancellation", err.Error())
+		return
+	}
+}
+
+func (r *serverResource) revokeCancellation(data *serverResourceModel, diags *diag.Diagnostics) {
+	_, err := r.client.Delete(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()))
+	if err != nil {
+		diags.AddError("Error revoking server cancellation", err.Error())
+		return
+	}
 }
