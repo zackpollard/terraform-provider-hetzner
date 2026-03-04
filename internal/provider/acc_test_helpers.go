@@ -60,15 +60,26 @@ func testAccNewClient(t *testing.T) *client.Client {
 
 // serverMarketProduct represents a server from the Hetzner server auction.
 type serverMarketProduct struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	CPU         string  `json:"cpu"`
-	RAMSize     int     `json:"ram_size"`
-	HDDSize     int     `json:"hdd_size"`
-	Price       float64 `json:"price"`
-	HourlyPrice float64 `json:"hourly_price"`
-	Datacenter  string  `json:"datacenter"`
-	FixedPrice  bool    `json:"fixed_price"`
+	ID          int      `json:"id"`
+	Name        string   `json:"name"`
+	CPU         string   `json:"cpu"`
+	RAMSize     int      `json:"ram_size"`
+	HDDSize     int      `json:"hdd_size"`
+	Price       float64  `json:"price"`
+	HourlyPrice float64  `json:"hourly_price"`
+	Datacenter  string   `json:"datacenter"`
+	FixedPrice  bool     `json:"fixed_price"`
+	Specials    []string `json:"specials"`
+}
+
+// hasIPv4 checks if the specials list includes "IPv4".
+func hasIPv4(specials []string) bool {
+	for _, s := range specials {
+		if s == "IPv4" {
+			return true
+		}
+	}
+	return false
 }
 
 // testAccFindCheapestServer queries the public Hetzner server auction endpoint
@@ -96,15 +107,15 @@ func testAccFindCheapestServer(t *testing.T) int {
 	}
 	products := wrapper.Server
 
-	// Filter to hourly-priced servers and sort by hourly price.
+	// Filter to hourly-priced servers with IPv4 and sort by hourly price.
 	var hourly []serverMarketProduct
 	for _, p := range products {
-		if p.HourlyPrice > 0 {
+		if p.HourlyPrice > 0 && hasIPv4(p.Specials) {
 			hourly = append(hourly, p)
 		}
 	}
 	if len(hourly) == 0 {
-		t.Fatal("No hourly-billed servers available in the auction")
+		t.Fatal("No hourly-billed servers with IPv4 available in the auction")
 	}
 
 	sort.Slice(hourly, func(i, j int) bool {
@@ -612,4 +623,95 @@ resource "hetzner_vswitch_server" "test" {
   server_number = %s
 }
 `, vswitchID, serverNumber)
+}
+
+func testAccIPConfig(ip string, trafficWarnings bool, hourly, daily, monthly int) string {
+	return fmt.Sprintf(`
+resource "hetzner_ip" "test" {
+  ip               = %q
+  traffic_warnings = %t
+  traffic_hourly   = %d
+  traffic_daily    = %d
+  traffic_monthly  = %d
+}
+`, ip, trafficWarnings, hourly, daily, monthly)
+}
+
+func testAccSubnetConfig(ip string, trafficWarnings bool, hourly, daily, monthly int) string {
+	return fmt.Sprintf(`
+resource "hetzner_subnet" "test" {
+  ip               = %q
+  traffic_warnings = %t
+  traffic_hourly   = %d
+  traffic_daily    = %d
+  traffic_monthly  = %d
+}
+`, ip, trafficWarnings, hourly, daily, monthly)
+}
+
+func testAccSubnetDataSourceConfig(ip string) string {
+	return fmt.Sprintf(`
+data "hetzner_subnet" "test" {
+  ip = %q
+}
+`, ip)
+}
+
+func testAccFailoverConfig(ip, activeServerIP string) string {
+	return fmt.Sprintf(`
+resource "hetzner_failover" "test" {
+  ip               = %q
+  active_server_ip = %q
+}
+`, ip, activeServerIP)
+}
+
+func testAccBootVNCConfig(serverNumber, dist, lang string) string {
+	return fmt.Sprintf(`
+resource "hetzner_boot_vnc" "test" {
+  server_number = %s
+  dist          = %q
+  lang          = %q
+}
+`, serverNumber, dist, lang)
+}
+
+func testAccBootWindowsConfig(serverNumber, dist, lang string) string {
+	return fmt.Sprintf(`
+resource "hetzner_boot_windows" "test" {
+  server_number = %s
+  dist          = %q
+  lang          = %q
+}
+`, serverNumber, dist, lang)
+}
+
+func testAccBootWindowsDataSourceConfig(serverNumber string) string {
+	return fmt.Sprintf(`
+data "hetzner_boot_windows" "test" {
+  server_number = %s
+}
+`, serverNumber)
+}
+
+// testAccSubnetIP queries the API for the first available subnet IP.
+// Skips the test if no subnets exist on the account.
+func testAccSubnetIP(t *testing.T) string {
+	t.Helper()
+	c := testAccNewClient(t)
+
+	body, err := c.Get("/subnet")
+	if err != nil {
+		t.Skipf("No subnets available (GET /subnet failed: %s); skipping", err)
+	}
+
+	var subnets []struct {
+		Subnet struct {
+			IP string `json:"ip"`
+		} `json:"subnet"`
+	}
+	if err := json.Unmarshal(body, &subnets); err != nil || len(subnets) == 0 {
+		t.Skip("No subnets available on the account; skipping")
+	}
+	return subnets[0].Subnet.IP
 }

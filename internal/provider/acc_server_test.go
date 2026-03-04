@@ -292,3 +292,106 @@ func TestAccSubnets_DataSource(t *testing.T) {
 		},
 	})
 }
+
+// --- IP resource tests ---
+
+// TestAccIP_CRUD tests managing traffic settings on a server's main IP.
+func TestAccIP_CRUD(t *testing.T) {
+	serverNumber := testAccGetOrCreateServer(t)
+	serverIP := testAccServerIP(t, serverNumber)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create: set traffic settings.
+			{
+				Config: testAccIPConfig(serverIP, true, 100, 1000, 10),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_ip.test", "ip", serverIP),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_warnings", "true"),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_hourly", "100"),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_daily", "1000"),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_monthly", "10"),
+					resource.TestCheckResourceAttrSet("hetzner_ip.test", "server_number"),
+				),
+			},
+			// Import.
+			{
+				ResourceName:                         "hetzner_ip.test",
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "ip",
+			},
+			// Update: change traffic settings.
+			{
+				Config: testAccIPConfig(serverIP, false, 200, 2000, 20),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_warnings", "false"),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_hourly", "200"),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_daily", "2000"),
+					resource.TestCheckResourceAttr("hetzner_ip.test", "traffic_monthly", "20"),
+				),
+			},
+		},
+	})
+}
+
+// --- Subnet resource tests ---
+
+// TestAccSubnet_CRUD tests managing traffic settings on a subnet.
+func TestAccSubnet_CRUD(t *testing.T) {
+	subnetIP := testAccSubnetIP(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create: set traffic settings.
+			{
+				Config: testAccSubnetConfig(subnetIP, true, 100, 1000, 10),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_subnet.test", "ip", subnetIP),
+					resource.TestCheckResourceAttr("hetzner_subnet.test", "traffic_warnings", "true"),
+					resource.TestCheckResourceAttrSet("hetzner_subnet.test", "mask"),
+					resource.TestCheckResourceAttrSet("hetzner_subnet.test", "gateway"),
+				),
+			},
+			// Import.
+			{
+				ResourceName:                         "hetzner_subnet.test",
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "ip",
+			},
+			// Update: change traffic settings.
+			{
+				Config: testAccSubnetConfig(subnetIP, false, 200, 2000, 20),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_subnet.test", "traffic_warnings", "false"),
+					resource.TestCheckResourceAttr("hetzner_subnet.test", "traffic_hourly", "200"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccSubnet_DataSource reads a subnet via singular data source.
+func TestAccSubnet_DataSource(t *testing.T) {
+	subnetIP := testAccSubnetIP(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSubnetDataSourceConfig(subnetIP),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.hetzner_subnet.test", "ip", subnetIP),
+					resource.TestCheckResourceAttrSet("data.hetzner_subnet.test", "mask"),
+					resource.TestCheckResourceAttrSet("data.hetzner_subnet.test", "gateway"),
+				),
+			},
+		},
+	})
+}

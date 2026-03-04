@@ -124,3 +124,25 @@ func TestAccFirewallTemplate_DataSources(t *testing.T) {
 		},
 	})
 }
+
+// TestAccFirewallTemplate_DataSource reads a single template via singular data source.
+func TestAccFirewallTemplate_DataSource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				// Create a template, then read it back via the singular data source.
+				Config: testAccFirewallTemplateConfig("acc-ds-test-template") + `
+data "hetzner_firewall_template" "test" {
+  id = hetzner_firewall_template.test.id
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.hetzner_firewall_template.test", "name", "acc-ds-test-template"),
+					resource.TestCheckResourceAttrSet("data.hetzner_firewall_template.test", "id"),
+				),
+			},
+		},
+	})
+}

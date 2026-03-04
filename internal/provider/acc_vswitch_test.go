@@ -60,3 +60,27 @@ func TestAccVSwitch_DataSources(t *testing.T) {
 		},
 	})
 }
+
+// TestAccVSwitch_DataSource reads a single vSwitch via singular data source.
+func TestAccVSwitch_DataSource(t *testing.T) {
+	testAccVSwitchCreateEnabled(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				// Create a vSwitch, then read it back via the singular data source.
+				Config: testAccVSwitchConfig("acc-singular-ds-test", 4002) + `
+data "hetzner_vswitch" "test" {
+  id = hetzner_vswitch.test.id
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.hetzner_vswitch.test", "name", "acc-singular-ds-test"),
+					resource.TestCheckResourceAttr("data.hetzner_vswitch.test", "vlan", "4002"),
+				),
+			},
+		},
+	})
+}

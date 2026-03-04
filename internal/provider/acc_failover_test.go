@@ -46,3 +46,35 @@ func TestAccFailovers_DataSource(t *testing.T) {
 		},
 	})
 }
+
+// TestAccFailover_CRUD tests managing a failover IP resource.
+// Requires HETZNER_TEST_FAILOVER_IP and a server with IPv4.
+func TestAccFailover_CRUD(t *testing.T) {
+	failoverIP := testAccFailoverIP(t)
+	serverNumber := testAccGetOrCreateServer(t)
+	serverIP := testAccServerIP(t, serverNumber)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create: route failover IP to server.
+			{
+				Config: testAccFailoverConfig(failoverIP, serverIP),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_failover.test", "ip", failoverIP),
+					resource.TestCheckResourceAttr("hetzner_failover.test", "active_server_ip", serverIP),
+					resource.TestCheckResourceAttrSet("hetzner_failover.test", "netmask"),
+					resource.TestCheckResourceAttrSet("hetzner_failover.test", "server_number"),
+				),
+			},
+			// Import.
+			{
+				ResourceName:                         "hetzner_failover.test",
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "ip",
+			},
+		},
+	})
+}

@@ -101,6 +101,32 @@ data "hetzner_ssh_keys" "all" {
 	})
 }
 
+// TestAccSSHKey_DataSource reads a single SSH key via the singular data source.
+func TestAccSSHKey_DataSource(t *testing.T) {
+	pubKey := testAccGenerateSSHKey(t, "acc-singular-ds-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				// Create a key, then read it back via the singular data source.
+				Config: testAccSSHKeyConfig("acc-singular-ds-test-key", pubKey) + `
+data "hetzner_ssh_key" "test" {
+  fingerprint = hetzner_ssh_key.test.fingerprint
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.hetzner_ssh_key.test", "name", "acc-singular-ds-test-key"),
+					resource.TestCheckResourceAttrSet("data.hetzner_ssh_key.test", "fingerprint"),
+					resource.TestCheckResourceAttrSet("data.hetzner_ssh_key.test", "type"),
+					resource.TestCheckResourceAttrSet("data.hetzner_ssh_key.test", "size"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccSSHKey_ReplaceOnKeyChange verifies that changing the key data forces replacement.
 func TestAccSSHKey_ReplaceOnKeyChange(t *testing.T) {
 	pubKey1 := testAccGenerateSSHKey(t, "key1")
