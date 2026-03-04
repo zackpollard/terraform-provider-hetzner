@@ -14,9 +14,9 @@ import (
 // --- Server resource tests ---
 
 // TestAccServer_Rename tests renaming a server and importing it.
-// Uses an ephemeral server to avoid modifying the persistent test server.
+// Renames the server then restores the original name at the end.
 func TestAccServer_Rename(t *testing.T) {
-	serverNumber := testAccOrderEphemeralServer(t)
+	serverNumber := testAccGetOrCreateServer(t)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -51,6 +51,13 @@ func TestAccServer_Rename(t *testing.T) {
 				Config: testAccServerConfig(serverNumber, "acc-test-server-renamed"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("hetzner_server.test", "server_name", "acc-test-server-renamed"),
+				),
+			},
+			// Restore original name.
+			{
+				Config: testAccServerConfig(serverNumber, "acc-test-server"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_server.test", "server_name", "acc-test-server"),
 				),
 			},
 		},

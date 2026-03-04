@@ -122,37 +122,6 @@ func testAccGetOrCreateServer(t *testing.T) string {
 	return defaultTestServerNumber
 }
 
-// testAccOrderEphemeralServer orders a new server from the auction for tests
-// that need their own isolated server (e.g., server rename tests).
-// The server is automatically cancelled when the test finishes.
-// Requires HETZNER_TEST_SERVER_CREATE=1 to run.
-func testAccOrderEphemeralServer(t *testing.T) string {
-	t.Helper()
-	if os.Getenv("HETZNER_TEST_SERVER_CREATE") != "1" {
-		t.Skip("HETZNER_TEST_SERVER_CREATE=1 required; skipping server lifecycle test")
-	}
-
-	serverNumber, err := testAccOrderServer(t)
-	if err != nil {
-		t.Fatalf("Error ordering ephemeral server: %s", err)
-	}
-
-	t.Cleanup(func() {
-		c := testAccNewClient(t)
-		form := url.Values{}
-		form.Set("cancellation_date", "now")
-		t.Logf("Cancelling ephemeral server %s", serverNumber)
-		_, err := c.Post("/server/"+serverNumber+"/cancellation", form)
-		if err != nil {
-			t.Logf("Warning: failed to cancel server %s: %s", serverNumber, err)
-		} else {
-			t.Logf("Server %s cancelled successfully", serverNumber)
-		}
-	})
-
-	return serverNumber
-}
-
 // testAccOrderServer orders the cheapest hourly server from the auction
 // and waits for it to be ready. Returns the server number.
 func testAccOrderServer(t *testing.T) (string, error) {
