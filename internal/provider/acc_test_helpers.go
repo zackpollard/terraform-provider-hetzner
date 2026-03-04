@@ -694,6 +694,56 @@ data "hetzner_boot_windows" "test" {
 `, serverNumber)
 }
 
+// testAccRequireBootOption skips the test if the given boot option (vnc, windows, etc.)
+// is not available on the server. Checks GET /boot/{server_number}/{option}.
+func testAccRequireBootOption(t *testing.T, serverNumber, option string) {
+	t.Helper()
+	c := testAccNewClient(t)
+	_, err := c.Get(fmt.Sprintf("/boot/%s/%s", serverNumber, option))
+	if err != nil {
+		t.Skipf("Boot option %q not available on server %s: %s", option, serverNumber, err)
+	}
+}
+
+// testAccFirstBootDist queries the boot API for the given option and returns the first
+// available distribution. Skips if no distributions are available.
+func testAccFirstBootDist(t *testing.T, serverNumber, option string) string {
+	t.Helper()
+	c := testAccNewClient(t)
+	body, err := c.Get(fmt.Sprintf("/boot/%s/%s", serverNumber, option))
+	if err != nil {
+		t.Skipf("Boot option %q not available on server %s: %s", option, serverNumber, err)
+	}
+
+	// The response shape is {"<option>": {"dist": [...], ...}}.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil {
+		t.Fatalf("Error parsing boot %s response: %s", option, err)
+	}
+	optionData, ok := raw[option]
+	if !ok {
+		t.Skipf("No %q key in boot response", option)
+	}
+	var details struct {
+		Dist interface{} `json:"dist"`
+	}
+	if err := json.Unmarshal(optionData, &details); err != nil {
+		t.Fatalf("Error parsing boot %s details: %s", option, err)
+	}
+
+	// dist can be a list of strings or null.
+	switch v := details.Dist.(type) {
+	case []interface{}:
+		if len(v) == 0 {
+			t.Skipf("No distributions available for boot %s on server %s", option, serverNumber)
+		}
+		return fmt.Sprintf("%v", v[0])
+	default:
+		t.Skipf("No distributions available for boot %s on server %s", option, serverNumber)
+	}
+	return ""
+}
+
 // testAccSubnetIP queries the API for the first available subnet IP.
 // Skips the test if no subnets exist on the account.
 func testAccSubnetIP(t *testing.T) string {

@@ -134,11 +134,11 @@ func TestAccBootRescue_Update(t *testing.T) {
 					resource.TestCheckResourceAttr("hetzner_boot_rescue.test", "active", "true"),
 				),
 			},
-			// Update to vkvm.
+			// Update to linuxold.
 			{
-				Config: testAccBootRescueConfig(serverNumber, "vkvm"),
+				Config: testAccBootRescueConfig(serverNumber, "linuxold"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("hetzner_boot_rescue.test", "os", "vkvm"),
+					resource.TestCheckResourceAttr("hetzner_boot_rescue.test", "os", "linuxold"),
 					resource.TestCheckResourceAttr("hetzner_boot_rescue.test", "active", "true"),
 				),
 			},
@@ -146,7 +146,7 @@ func TestAccBootRescue_Update(t *testing.T) {
 	})
 }
 
-// TestAccBootLinux_Update tests changing the Linux install language.
+// TestAccBootLinux_Update tests changing the Linux install distribution.
 func TestAccBootLinux_Update(t *testing.T) {
 	serverNumber := testAccGetOrCreateServer(t)
 
@@ -154,20 +154,20 @@ func TestAccBootLinux_Update(t *testing.T) {
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Activate with English.
+			// Activate with Debian 12.
 			{
 				Config: testAccBootLinuxConfig(serverNumber, "Debian 12 base", "en"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("hetzner_boot_linux.test", "active", "true"),
-					resource.TestCheckResourceAttr("hetzner_boot_linux.test", "lang", "en"),
+					resource.TestCheckResourceAttr("hetzner_boot_linux.test", "dist", "Debian 12 base"),
 				),
 			},
-			// Update to German.
+			// Update to Ubuntu 24.04.
 			{
-				Config: testAccBootLinuxConfig(serverNumber, "Debian 12 base", "de"),
+				Config: testAccBootLinuxConfig(serverNumber, "Ubuntu 24.04 LTS base", "en"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("hetzner_boot_linux.test", "active", "true"),
-					resource.TestCheckResourceAttr("hetzner_boot_linux.test", "lang", "de"),
+					resource.TestCheckResourceAttr("hetzner_boot_linux.test", "dist", "Ubuntu 24.04 LTS base"),
 				),
 			},
 		},
@@ -177,6 +177,7 @@ func TestAccBootLinux_Update(t *testing.T) {
 // TestAccBootVNC_CRUD tests activating and importing VNC boot configuration.
 func TestAccBootVNC_CRUD(t *testing.T) {
 	serverNumber := testAccGetOrCreateServer(t)
+	testAccRequireBootOption(t, serverNumber, "vnc")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -184,7 +185,7 @@ func TestAccBootVNC_CRUD(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Activate VNC install.
 			{
-				Config: testAccBootVNCConfig(serverNumber, "Debian 12 base", "en"),
+				Config: testAccBootVNCConfig(serverNumber, testAccFirstBootDist(t, serverNumber, "vnc"), "en_US"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("hetzner_boot_vnc.test", "active", "true"),
 					resource.TestCheckResourceAttrSet("hetzner_boot_vnc.test", "password"),
@@ -214,16 +215,15 @@ func TestAccBootVNC_CRUD(t *testing.T) {
 // Skips if the server does not support Windows install.
 func TestAccBootWindows_CRUD(t *testing.T) {
 	serverNumber := testAccGetOrCreateServer(t)
+	testAccRequireBootOption(t, serverNumber, "windows")
 
-	// Check if server supports Windows by reading the boot_windows data source first.
-	// If the server doesn't support Windows, this resource may not have valid dists.
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Activate Windows install.
 			{
-				Config: testAccBootWindowsConfig(serverNumber, "Windows Server 2022", "en"),
+				Config: testAccBootWindowsConfig(serverNumber, testAccFirstBootDist(t, serverNumber, "windows"), "en"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("hetzner_boot_windows.test", "active", "true"),
 					resource.TestCheckResourceAttrSet("hetzner_boot_windows.test", "password"),
@@ -252,6 +252,7 @@ func TestAccBootWindows_CRUD(t *testing.T) {
 // TestAccBootWindows_DataSource reads Windows boot options via data source.
 func TestAccBootWindows_DataSource(t *testing.T) {
 	serverNumber := testAccGetOrCreateServer(t)
+	testAccRequireBootOption(t, serverNumber, "windows")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
