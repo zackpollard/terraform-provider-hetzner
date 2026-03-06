@@ -5,6 +5,7 @@ package provider
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -14,9 +15,17 @@ import (
 // --- Server resource tests ---
 
 // TestAccServer_Rename tests renaming a server and importing it.
-// Renames the server then restores the original name at the end.
+// This test uses hetzner_server resource which cancels the server on destroy,
+// so it orders its own server. Gate behind HETZNER_TEST_SERVER_ORDER=1.
 func TestAccServer_Rename(t *testing.T) {
-	serverNumber := testAccGetOrCreateServer(t)
+	if os.Getenv("HETZNER_TEST_SERVER_ORDER") != "1" {
+		t.Skip("HETZNER_TEST_SERVER_ORDER not set to 1; skipping (this test orders and cancels a server)")
+	}
+
+	serverNumber, err := testAccOrderServer(t)
+	if err != nil {
+		t.Fatalf("Failed to order server: %s", err)
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -38,6 +47,7 @@ func TestAccServer_Rename(t *testing.T) {
 				ImportState:                          true,
 				ImportStateVerify:                    true,
 				ImportStateVerifyIdentifierAttribute: "server_number",
+				ImportStateVerifyIgnore:              []string{"reserve_location"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources["hetzner_server.test"]
 					if !ok {

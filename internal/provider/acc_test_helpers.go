@@ -11,17 +11,24 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/zack/terraform-provider-hetzner/internal/client"
 )
 
+// cachedServerNumber stores the resolved server number across tests within a single test run.
+var (
+	cachedServerNumber string
+	cachedServerOnce   sync.Once
+)
+
 // Default persistent test server and failover IP.
 // These are long-lived resources kept on the account for acceptance tests.
 const (
-	defaultTestServerNumber = "2939328"
-	defaultTestFailoverIP   = "78.46.24.37"
+	defaultTestServerNumber = "2940646"
+	defaultTestFailoverIP   = "88.99.239.234"
 )
 
 // --- Test API client ---
@@ -112,14 +119,47 @@ func testAccFindCheapestServer(t *testing.T) int {
 }
 
 // testAccGetOrCreateServer returns the persistent test server number.
-// Uses HETZNER_TEST_SERVER_NUMBER env var, or defaults to the long-lived
-// test server (2939328) kept on the account for acceptance tests.
+// Uses HETZNER_TEST_SERVER_NUMBER env var if set, otherwise checks
+// the default server, then falls back to the first server on the account.
+// Never orders a server — that is only done by server order tests.
+// The result is cached for the duration of the test run.
 func testAccGetOrCreateServer(t *testing.T) string {
 	t.Helper()
+
 	if v := os.Getenv("HETZNER_TEST_SERVER_NUMBER"); v != "" {
 		return v
 	}
-	return defaultTestServerNumber
+
+	cachedServerOnce.Do(func() {
+		c := testAccNewClient(t)
+
+		// Check if the default server exists.
+		if _, err := c.Get("/server/" + defaultTestServerNumber); err == nil {
+			cachedServerNumber = defaultTestServerNumber
+			return
+		}
+
+		// Fall back to the first server on the account.
+		body, err := c.Get("/server")
+		if err == nil {
+			var servers []struct {
+				Server struct {
+					ServerNumber int    `json:"server_number"`
+					Status       string `json:"status"`
+				} `json:"server"`
+			}
+			if json.Unmarshal(body, &servers) == nil && len(servers) > 0 {
+				cachedServerNumber = fmt.Sprintf("%d", servers[0].Server.ServerNumber)
+				t.Logf("Using existing server %s (status: %s)", cachedServerNumber, servers[0].Server.Status)
+				return
+			}
+		}
+	})
+
+	if cachedServerNumber == "" {
+		t.Skip("No test server available; set HETZNER_TEST_SERVER_NUMBER or ensure a server exists on the account")
+	}
+	return cachedServerNumber
 }
 
 // testAccOrderServer orders the cheapest hourly server from the auction
@@ -272,17 +312,17 @@ func testAccServerIP(t *testing.T, serverNumber string) string {
 
 // --- Environment variable gates ---
 
-func testAccVSwitchCreateEnabled(t *testing.T) {
-	t.Helper()
-	if os.Getenv("HETZNER_TEST_VSWITCH_CREATE") != "1" {
-		t.Skip("HETZNER_TEST_VSWITCH_CREATE not set to 1; skipping")
-	}
-}
-
 func testAccFailoverIP(t *testing.T) string {
 	t.Helper()
 	if v := os.Getenv("HETZNER_TEST_FAILOVER_IP"); v != "" {
 		return v
+	}
+
+	// Verify the default failover IP actually exists on the account.
+	c := testAccNewClient(t)
+	_, err := c.Get("/failover/" + defaultTestFailoverIP)
+	if err != nil {
+		t.Skip("No failover IP available on account; skipping")
 	}
 	return defaultTestFailoverIP
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -15,7 +16,10 @@ import (
 	"github.com/zack/terraform-provider-hetzner/internal/client"
 )
 
-var _ provider.Provider = &HetznerProvider{}
+var (
+	_ provider.Provider                       = &HetznerProvider{}
+	_ provider.ProviderWithEphemeralResources = &HetznerProvider{}
+)
 
 // HetznerProvider defines the provider implementation.
 type HetznerProvider struct {
@@ -118,6 +122,11 @@ func (p *HetznerProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewBootLinuxResource,
 		NewBootVNCResource,
 		NewBootWindowsResource,
+		// Batch 5: MAC address management, cancellations
+		NewIPMACResource,
+		NewSubnetMACResource,
+		NewIPCancellationResource,
+		NewSubnetCancellationResource,
 	}
 }
 
@@ -152,6 +161,16 @@ func (p *HetznerProvider) DataSources(ctx context.Context) []func() datasource.D
 		NewBootWindowsDataSource,
 		NewResetDataSource,
 		NewWOLDataSource,
+		// Batch 5: traffic, rDNS list
+		NewTrafficDataSource,
+		NewRDNSListDataSource,
+	}
+}
+
+func (p *HetznerProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+		NewResetEphemeralResource,
+		NewWOLEphemeralResource,
 	}
 }
 
