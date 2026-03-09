@@ -107,10 +107,9 @@ func (p *HetznerProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewRDNSResource,
 		NewFirewallResource,
 		NewFirewallTemplateResource,
-		// Batch 2: vSwitch, server, IP, subnet, failover
+		// Batch 2: vSwitch, IP, subnet, failover
 		NewVSwitchResource,
 		NewVSwitchServerResource,
-		NewServerResource,
 		NewIPResource,
 		NewSubnetResource,
 		NewFailoverResource,

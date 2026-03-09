@@ -21,7 +21,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/zack/terraform-provider-hetzner/internal/client"
@@ -42,25 +41,61 @@ type serverOrderResource struct {
 }
 
 type serverOrderResourceModel struct {
-	ProductID      types.String `tfsdk:"product_id"`
-	Source         types.String `tfsdk:"source"`
-	AuthorizedKeys types.List   `tfsdk:"authorized_keys"`
-	Addons         types.List   `tfsdk:"addons"`
-	Location       types.String `tfsdk:"location"`
-	Dist           types.String `tfsdk:"dist"`
-	Lang           types.String `tfsdk:"lang"`
-	Test           types.Bool   `tfsdk:"test"`
-	TransactionID  types.String `tfsdk:"transaction_id"`
-	ServerNumber   types.Int64  `tfsdk:"server_number"`
-	ServerIP       types.String `tfsdk:"server_ip"`
-	ServerIPv6     types.String `tfsdk:"server_ipv6_net"`
-	ServerName     types.String `tfsdk:"server_name"`
-	Product        types.String `tfsdk:"product"`
-	DC             types.String `tfsdk:"dc"`
-	Traffic        types.String `tfsdk:"traffic"`
-	Status         types.String `tfsdk:"status"`
-	Cancelled      types.Bool   `tfsdk:"cancelled"`
-	PaidUntil      types.String `tfsdk:"paid_until"`
+	ProductID                types.String `tfsdk:"product_id"`
+	Source                   types.String `tfsdk:"source"`
+	AuthorizedKeys           types.List   `tfsdk:"authorized_keys"`
+	Addons                   types.List   `tfsdk:"addons"`
+	Location                 types.String `tfsdk:"location"`
+	Dist                     types.String `tfsdk:"dist"`
+	Lang                     types.String `tfsdk:"lang"`
+	Test                     types.Bool   `tfsdk:"test"`
+	TransactionID            types.String `tfsdk:"transaction_id"`
+	ServerNumber             types.Int64  `tfsdk:"server_number"`
+	ServerIP                 types.String `tfsdk:"server_ip"`
+	ServerIPv6               types.String `tfsdk:"server_ipv6_net"`
+	ServerName               types.String `tfsdk:"server_name"`
+	Product                  types.String `tfsdk:"product"`
+	DC                       types.String `tfsdk:"dc"`
+	Traffic                  types.String `tfsdk:"traffic"`
+	Status                   types.String `tfsdk:"status"`
+	Cancelled                types.Bool   `tfsdk:"cancelled"`
+	PaidUntil                types.String `tfsdk:"paid_until"`
+	CancellationDate         types.String `tfsdk:"cancellation_date"`
+	ReserveLocation          types.Bool   `tfsdk:"reserve_location"`
+	EarliestCancellationDate types.String `tfsdk:"earliest_cancellation_date"`
+}
+
+// Server API response types shared across resources and data sources.
+
+type serverDetailAPIResponse struct {
+	Server serverDetailAPI `json:"server"`
+}
+
+type serverDetailAPI struct {
+	ServerIP     string `json:"server_ip"`
+	ServerIPv6   string `json:"server_ipv6_net"`
+	ServerNumber int    `json:"server_number"`
+	ServerName   string `json:"server_name"`
+	Product      string `json:"product"`
+	DC           string `json:"dc"`
+	Traffic      string `json:"traffic"`
+	Status       string `json:"status"`
+	Cancelled    bool   `json:"cancelled"`
+	PaidUntil    string `json:"paid_until"`
+}
+
+type serverCancellationAPIResponse struct {
+	Cancellation serverCancellationAPI `json:"cancellation"`
+}
+
+type serverCancellationAPI struct {
+	ServerIP                 string  `json:"server_ip"`
+	ServerNumber             int     `json:"server_number"`
+	EarliestCancellationDate string  `json:"earliest_cancellation_date"`
+	Cancelled                bool    `json:"cancelled"`
+	ReservationPossible      bool    `json:"reservation_possible"`
+	Reserved                 bool    `json:"reserved"`
+	CancellationDate         *string `json:"cancellation_date"`
 }
 
 // orderTransactionAPIResponse represents the API response for server order transactions.
@@ -80,11 +115,11 @@ func (r *serverOrderResource) Metadata(ctx context.Context, req resource.Metadat
 
 func (r *serverOrderResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Orders a Hetzner dedicated server from the standard catalog or server market (auction). The server is cancelled on destroy.",
+		MarkdownDescription: "Orders and manages a Hetzner dedicated server. Supports ordering from the standard catalog or server market (auction), managing the server name and cancellation, and importing existing servers. The server is cancelled on destroy.",
 		Attributes: map[string]schema.Attribute{
 			"product_id": schema.StringAttribute{
-				MarkdownDescription: "Product ID to order.",
-				Required:            true,
+				MarkdownDescription: "Product ID to order. Not required when importing an existing server.",
+				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -92,8 +127,6 @@ func (r *serverOrderResource) Schema(ctx context.Context, req resource.SchemaReq
 			"source": schema.StringAttribute{
 				MarkdownDescription: "Order source: \"market\" (auction) or \"standard\" (catalog). Defaults to \"market\".",
 				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("market"),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -138,8 +171,6 @@ func (r *serverOrderResource) Schema(ctx context.Context, req resource.SchemaReq
 			"test": schema.BoolAttribute{
 				MarkdownDescription: "Whether this is a test order. Defaults to false.",
 				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(false),
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.RequiresReplace(),
 				},
@@ -167,7 +198,8 @@ func (r *serverOrderResource) Schema(ctx context.Context, req resource.SchemaReq
 				Computed:            true,
 			},
 			"server_name": schema.StringAttribute{
-				MarkdownDescription: "The server name.",
+				MarkdownDescription: "The user-assigned server name.",
+				Optional:            true,
 				Computed:            true,
 			},
 			"product": schema.StringAttribute{
@@ -194,6 +226,20 @@ func (r *serverOrderResource) Schema(ctx context.Context, req resource.SchemaReq
 				MarkdownDescription: "Date the server is paid until.",
 				Computed:            true,
 			},
+			"cancellation_date": schema.StringAttribute{
+				MarkdownDescription: "The cancellation date (YYYY-MM-DD or \"now\"). Set to schedule cancellation, remove to revoke.",
+				Optional:            true,
+			},
+			"reserve_location": schema.BoolAttribute{
+				MarkdownDescription: "Whether to reserve the server location on cancellation.",
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+			},
+			"earliest_cancellation_date": schema.StringAttribute{
+				MarkdownDescription: "The earliest possible cancellation date.",
+				Computed:            true,
+			},
 		},
 	}
 }
@@ -214,6 +260,12 @@ func (r *serverOrderResource) Create(ctx context.Context, req resource.CreateReq
 	var data serverOrderResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// product_id is required for ordering (but optional in schema for import).
+	if data.ProductID.IsNull() || data.ProductID.ValueString() == "" {
+		resp.Diagnostics.AddError("Missing product_id", "product_id is required when ordering a new server")
 		return
 	}
 
@@ -300,6 +352,25 @@ func (r *serverOrderResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	// Set server name if specified.
+	if !data.ServerName.IsNull() && data.ServerName.ValueString() != "" {
+		nameParams := url.Values{}
+		nameParams.Set("server_name", data.ServerName.ValueString())
+		_, err := r.client.PostWithContext(ctx, fmt.Sprintf("/server/%d", serverNumber), nameParams)
+		if err != nil {
+			resp.Diagnostics.AddError("Error setting server name", err.Error())
+			return
+		}
+	}
+
+	// Schedule cancellation if requested.
+	if !data.CancellationDate.IsNull() {
+		r.setCancellation(&data, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	// Read full server details.
 	r.readServerOrder(&data, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -325,8 +396,54 @@ func (r *serverOrderResource) Read(ctx context.Context, req resource.ReadRequest
 }
 
 func (r *serverOrderResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// All attributes are ForceNew, so Update should never be called.
-	resp.Diagnostics.AddError("Unexpected Update", "All attributes require replacement; Update should not be called.")
+	var plan serverOrderResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var state serverOrderResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Update server name if changed.
+	if !plan.ServerName.Equal(state.ServerName) && !plan.ServerName.IsNull() {
+		nameParams := url.Values{}
+		nameParams.Set("server_name", plan.ServerName.ValueString())
+		_, err := r.client.Post(fmt.Sprintf("/server/%d", plan.ServerNumber.ValueInt64()), nameParams)
+		if err != nil {
+			resp.Diagnostics.AddError("Error updating server name", err.Error())
+			return
+		}
+	}
+
+	// Handle cancellation changes.
+	planHasCancel := !plan.CancellationDate.IsNull()
+	stateHasCancel := !state.CancellationDate.IsNull()
+
+	switch {
+	case planHasCancel && !stateHasCancel:
+		r.setCancellation(&plan, &resp.Diagnostics)
+	case planHasCancel && stateHasCancel && plan.CancellationDate.ValueString() != state.CancellationDate.ValueString():
+		r.revokeCancellation(&plan, &resp.Diagnostics)
+		if !resp.Diagnostics.HasError() {
+			r.setCancellation(&plan, &resp.Diagnostics)
+		}
+	case !planHasCancel && stateHasCancel:
+		r.revokeCancellation(&plan, &resp.Diagnostics)
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	r.readServerOrder(&plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *serverOrderResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -336,8 +453,15 @@ func (r *serverOrderResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
+	// Schedule cancellation at the earliest possible date rather than immediately.
+	// This allows the cancellation to be revoked if needed.
+	cancellationDate := data.EarliestCancellationDate.ValueString()
+	if cancellationDate == "" {
+		cancellationDate = "now"
+	}
+
 	form := url.Values{}
-	form.Set("cancellation_date", "now")
+	form.Set("cancellation_date", cancellationDate)
 
 	_, err := r.client.PostWithContext(ctx, fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()), form)
 	if err != nil {
@@ -359,7 +483,7 @@ func (r *serverOrderResource) ImportState(ctx context.Context, req resource.Impo
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("server_number"), id)...)
 }
 
-// readServerOrder fetches server details from GET /server/{number} and populates computed fields.
+// readServerOrder fetches server details and cancellation state.
 func (r *serverOrderResource) readServerOrder(data *serverOrderResourceModel, diags *diag.Diagnostics) {
 	body, err := r.client.Get(fmt.Sprintf("/server/%d", data.ServerNumber.ValueInt64()))
 	if err != nil {
@@ -384,6 +508,52 @@ func (r *serverOrderResource) readServerOrder(data *serverOrderResourceModel, di
 	data.Status = types.StringValue(s.Status)
 	data.Cancelled = types.BoolValue(s.Cancelled)
 	data.PaidUntil = types.StringValue(s.PaidUntil)
+
+	// Read cancellation state.
+	cancelBody, err := r.client.Get(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()))
+	if err != nil {
+		diags.AddError("Error reading server cancellation", err.Error())
+		return
+	}
+
+	var cancelResp serverCancellationAPIResponse
+	if err := json.Unmarshal(cancelBody, &cancelResp); err != nil {
+		diags.AddError("Error parsing server cancellation response", err.Error())
+		return
+	}
+
+	c := cancelResp.Cancellation
+	data.EarliestCancellationDate = types.StringValue(c.EarliestCancellationDate)
+	// Only update cancellation_date in state if the user is managing it (i.e., it was
+	// already set in prior state or config). This prevents externally-scheduled
+	// cancellations from causing unexpected diffs.
+	if !data.CancellationDate.IsNull() {
+		if c.CancellationDate != nil {
+			data.CancellationDate = types.StringValue(*c.CancellationDate)
+		} else {
+			data.CancellationDate = types.StringNull()
+		}
+	}
+}
+
+func (r *serverOrderResource) setCancellation(data *serverOrderResourceModel, diags *diag.Diagnostics) {
+	params := url.Values{}
+	params.Set("cancellation_date", data.CancellationDate.ValueString())
+	if data.ReserveLocation.ValueBool() {
+		params.Set("reserve_location", "true")
+	}
+
+	_, err := r.client.Post(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()), params)
+	if err != nil {
+		diags.AddError("Error scheduling server cancellation", err.Error())
+	}
+}
+
+func (r *serverOrderResource) revokeCancellation(data *serverOrderResourceModel, diags *diag.Diagnostics) {
+	_, err := r.client.Delete(fmt.Sprintf("/server/%d/cancellation", data.ServerNumber.ValueInt64()))
+	if err != nil {
+		diags.AddError("Error revoking server cancellation", err.Error())
+	}
 }
 
 // pollTransactionForServerNumber polls the transaction endpoint until server_number is assigned.

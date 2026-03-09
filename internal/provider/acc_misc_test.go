@@ -131,6 +131,74 @@ func TestAccServerOrderProductsDataSource(t *testing.T) {
 	})
 }
 
+// --- Server order (market/auction) ---
+
+// TestAccServerOrder_Market orders the cheapest hourly auction server via hetzner_server_order.
+// Gated behind HETZNER_TEST_SERVER_ORDER=1 since it costs money.
+func TestAccServerOrder_Market(t *testing.T) {
+	if os.Getenv("HETZNER_TEST_SERVER_ORDER") != "1" {
+		t.Skip("HETZNER_TEST_SERVER_ORDER not set to 1; skipping (this test orders and cancels a server)")
+	}
+
+	productID := fmt.Sprintf("%d", testAccFindCheapestServer(t))
+	keyFingerprint := testAccGetSSHKeyFingerprint(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccServerOrderMarketConfig(productID, keyFingerprint),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "source", "market"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "server_number"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "server_ip"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "product"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "dc"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "status", "ready"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "cancelled", "false"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "transaction_id"),
+				),
+			},
+			// Destroy cancels the server.
+		},
+	})
+}
+
+// --- Server order (standard) ---
+
+// TestAccServerOrder_Standard orders the cheapest standard server with no setup fee
+// via hetzner_server_order. Gated behind HETZNER_TEST_SERVER_ORDER=1 since it costs money.
+func TestAccServerOrder_Standard(t *testing.T) {
+	if os.Getenv("HETZNER_TEST_SERVER_ORDER") != "1" {
+		t.Skip("HETZNER_TEST_SERVER_ORDER not set to 1; skipping (this test orders and cancels a server)")
+	}
+
+	productID := testAccFindCheapestStandardServer(t)
+	keyFingerprint := testAccGetSSHKeyFingerprint(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccServerOrderStandardConfig(productID, keyFingerprint),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "source", "standard"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "server_number"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "server_ip"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "product"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "dc"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "status", "ready"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "cancelled", "false"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "transaction_id"),
+				),
+			},
+			// Destroy cancels the server.
+		},
+	})
+}
+
 // --- Server addons data source ---
 
 func TestAccServerAddonsDataSource(t *testing.T) {

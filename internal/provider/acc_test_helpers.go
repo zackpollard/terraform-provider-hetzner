@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/zack/terraform-provider-hetzner/internal/client"
 )
 
@@ -27,7 +29,7 @@ var (
 // Default persistent test server and failover IP.
 // These are long-lived resources kept on the account for acceptance tests.
 const (
-	defaultTestServerNumber = "2940646"
+	defaultTestServerNumber = "2940124"
 	defaultTestFailoverIP   = "88.99.239.234"
 )
 
@@ -468,13 +470,12 @@ data "hetzner_firewall_templates" "test" {
 `
 }
 
-func testAccServerConfig(serverNumber, name string) string {
+func testAccServerOrderImportedConfig(name string) string {
 	return fmt.Sprintf(`
-resource "hetzner_server" "test" {
-  server_number = %s
-  server_name   = %q
+resource "hetzner_server_order" "test" {
+  server_name = %q
 }
-`, serverNumber, name)
+`, name)
 }
 
 func testAccServerDataSourceConfig(serverNumber string) string {
@@ -682,6 +683,65 @@ data "hetzner_boot_windows" "test" {
 `, serverNumber)
 }
 
+func testAccServerOrderMarketConfig(productID, keyFingerprint string) string {
+	return fmt.Sprintf(`
+resource "hetzner_server_order" "test" {
+  product_id      = %q
+  source          = "market"
+  authorized_keys = [%q]
+  addons          = ["primary_ipv4"]
+}
+`, productID, keyFingerprint)
+}
+
+func testAccServerOrderStandardConfig(productID, keyFingerprint string) string {
+	return fmt.Sprintf(`
+resource "hetzner_server_order" "test" {
+  product_id      = %q
+  source          = "standard"
+  authorized_keys = [%q]
+}
+`, productID, keyFingerprint)
+}
+
+// testAccGetSSHKeyFingerprint returns the first SSH key fingerprint on the account.
+func testAccGetSSHKeyFingerprint(t *testing.T) string {
+	t.Helper()
+	c := testAccNewClient(t)
+
+	body, err := c.Get("/key")
+	if err != nil {
+		t.Fatalf("Error fetching SSH keys: %s", err)
+	}
+
+	var keys []struct {
+		Key struct {
+			Fingerprint string `json:"fingerprint"`
+		} `json:"key"`
+	}
+	if err := json.Unmarshal(body, &keys); err != nil || len(keys) == 0 {
+		t.Fatal("No SSH keys found on the account; upload one before running server order tests")
+	}
+	return keys[0].Key.Fingerprint
+}
+
+// testAccRevokeCancellation returns a CheckDestroy function that revokes
+// server cancellation. Used to preserve persistent test servers when the
+// test framework's automatic destroy triggers a server cancellation.
+func testAccRevokeCancellation(t *testing.T, serverNumber string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		c := testAccNewClient(t)
+		_, err := c.Delete(fmt.Sprintf("/server/%s/cancellation", serverNumber))
+		if err != nil {
+			t.Logf("Warning: failed to revoke server %s cancellation: %s", serverNumber, err)
+			// Don't return error — best-effort revocation.
+		} else {
+			t.Logf("Revoked cancellation for persistent server %s", serverNumber)
+		}
+		return nil
+	}
+}
+
 // testAccRequireBootOption skips the test if the given boot option (vnc, windows, etc.)
 // is not available on the server. Checks GET /boot/{server_number}/{option}.
 func testAccRequireBootOption(t *testing.T, serverNumber, option string) {
@@ -730,6 +790,72 @@ func testAccFirstBootDist(t *testing.T, serverNumber, option string) string {
 		t.Skipf("No distributions available for boot %s on server %s", option, serverNumber)
 	}
 	return ""
+}
+
+// testAccFindCheapestStandardServer queries GET /order/server/product and returns
+// the product ID of the cheapest standard server with no setup fee. These are
+// typically AX-line servers billed hourly with instant activation.
+func testAccFindCheapestStandardServer(t *testing.T) string {
+	t.Helper()
+	c := testAccNewClient(t)
+
+	body, err := c.Get("/order/server/product")
+	if err != nil {
+		t.Fatalf("Error fetching standard server products: %s", err)
+	}
+
+	var products []serverOrderProductAPIResponse
+	if err := json.Unmarshal(body, &products); err != nil {
+		t.Fatalf("Error parsing standard server products: %s", err)
+	}
+
+	type candidate struct {
+		id       string
+		name     string
+		priceNet float64
+		location string
+	}
+
+	var candidates []candidate
+	for _, item := range products {
+		p := item.Product
+		for _, price := range p.Prices {
+			setupNet := 0.0
+			if price.PriceSetup.Net != "" {
+				fmt.Sscanf(price.PriceSetup.Net, "%f", &setupNet)
+			}
+			if setupNet > 0 {
+				continue
+			}
+			priceNet := 0.0
+			if price.Price.Net != "" {
+				fmt.Sscanf(price.Price.Net, "%f", &priceNet)
+			}
+			if priceNet <= 0 {
+				continue
+			}
+			candidates = append(candidates, candidate{
+				id:       p.ID,
+				name:     p.Name,
+				priceNet: priceNet,
+				location: price.Location,
+			})
+		}
+	}
+
+	if len(candidates) == 0 {
+		t.Fatal("No standard server products with zero setup fee found")
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].priceNet < candidates[j].priceNet
+	})
+
+	best := candidates[0]
+	t.Logf("Cheapest standard server (no setup fee): ID=%s, %s, €%.2f/mo, location=%s",
+		best.id, best.name, best.priceNet, best.location)
+
+	return best.id
 }
 
 // testAccSubnetIP queries the API for the first available subnet IP.

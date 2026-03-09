@@ -60,7 +60,6 @@ func (p *batch2TestProvider) Resources(_ context.Context) []func() resource.Reso
 	return []func() resource.Resource{
 		NewVSwitchResource,
 		NewVSwitchServerResource,
-		NewServerResource,
 		NewIPResource,
 		NewSubnetResource,
 		NewFailoverResource,

@@ -5,69 +5,57 @@ package provider
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// --- Server resource tests ---
+// --- Server order resource tests ---
 
-// TestAccServer_Rename tests renaming a server and importing it.
-// This test uses hetzner_server resource which cancels the server on destroy,
-// so it orders its own server. Gate behind HETZNER_TEST_SERVER_ORDER=1.
-func TestAccServer_Rename(t *testing.T) {
-	if os.Getenv("HETZNER_TEST_SERVER_ORDER") != "1" {
-		t.Skip("HETZNER_TEST_SERVER_ORDER not set to 1; skipping (this test orders and cancels a server)")
-	}
-
-	serverNumber, err := testAccOrderServer(t)
-	if err != nil {
-		t.Fatalf("Failed to order server: %s", err)
-	}
+// TestAccServerOrder_Rename tests renaming an imported server via hetzner_server_order.
+// Uses the persistent test server. CheckDestroy revokes the cancellation that
+// the destroy step triggers, to preserve the persistent server.
+func TestAccServerOrder_Rename(t *testing.T) {
+	serverNumber := testAccGetOrCreateServer(t)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccRevokeCancellation(t, serverNumber),
 		Steps: []resource.TestStep{
-			// Set server name.
+			// Import the existing server.
 			{
-				Config: testAccServerConfig(serverNumber, "acc-test-server"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("hetzner_server.test", "server_name", "acc-test-server"),
-					resource.TestCheckResourceAttrSet("hetzner_server.test", "product"),
-					resource.TestCheckResourceAttrSet("hetzner_server.test", "dc"),
-					resource.TestCheckResourceAttr("hetzner_server.test", "status", "ready"),
-				),
+				Config:             testAccServerOrderImportedConfig("acc-test-server"),
+				ResourceName:       "hetzner_server_order.test",
+				ImportState:         true,
+				ImportStateId:       serverNumber,
+				ImportStateVerify:   false,
+				ImportStatePersist:  true,
 			},
-			// Import.
+			// Verify state and set name.
 			{
-				ResourceName:                         "hetzner_server.test",
-				ImportState:                          true,
-				ImportStateVerify:                    true,
-				ImportStateVerifyIdentifierAttribute: "server_number",
-				ImportStateVerifyIgnore:              []string{"reserve_location"},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs, ok := s.RootModule().Resources["hetzner_server.test"]
-					if !ok {
-						return "", fmt.Errorf("resource not found in state")
-					}
-					return rs.Primary.Attributes["server_number"], nil
-				},
+				Config: testAccServerOrderImportedConfig("acc-test-server"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "server_name", "acc-test-server"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "product"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "dc"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "status", "ready"),
+					resource.TestCheckResourceAttrSet("hetzner_server_order.test", "earliest_cancellation_date"),
+				),
 			},
 			// Update name.
 			{
-				Config: testAccServerConfig(serverNumber, "acc-test-server-renamed"),
+				Config: testAccServerOrderImportedConfig("acc-test-server-renamed"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("hetzner_server.test", "server_name", "acc-test-server-renamed"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "server_name", "acc-test-server-renamed"),
 				),
 			},
 			// Restore original name.
 			{
-				Config: testAccServerConfig(serverNumber, "acc-test-server"),
+				Config: testAccServerOrderImportedConfig("acc-test-server"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("hetzner_server.test", "server_name", "acc-test-server"),
+					resource.TestCheckResourceAttr("hetzner_server_order.test", "server_name", "acc-test-server"),
 				),
 			},
 		},
