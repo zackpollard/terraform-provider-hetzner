@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -207,7 +208,7 @@ func parseTrafficData(raw json.RawMessage) (map[string]trafficAPIEntry, error) {
 		return result, nil
 	}
 
-	return result, nil
+	return result, fmt.Errorf("unexpected traffic data format")
 }
 
 // parseTrafficEntry handles both single-object and array-of-objects responses.
