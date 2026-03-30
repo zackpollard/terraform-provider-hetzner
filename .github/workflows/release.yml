@@ -1,30 +1,74 @@
 # Terraform Provider release workflow.
 name: Release
 
-# This GitHub action creates a release when a tag that matches the pattern
-# "v*" (e.g. v0.1.0) is created.
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
-# Releases need permissions to read and write the repository contents.
-# GitHub considers creating releases and uploading assets as writing contents.
 permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - run: go mod download
+      - run: go test -v -cover -run 'TestUnit' ./...
+
+  release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Allow goreleaser to access older tag information.
           fetch-depth: 0
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: 'go.mod'
           cache: true
+      - name: Calculate next version
+        if: github.event_name == 'workflow_dispatch'
+        id: next_version
+        run: |
+          # get latest tag, default to v0.0.0 if none exist
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest tag: $LATEST_TAG"
+
+          # parse major.minor.patch
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          # check conventional commits since last tag for bump level
+          COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+
+          if echo "$COMMITS" | grep -qiE '^[a-z]+(\(.+\))?!:|BREAKING CHANGE:'; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif echo "$COMMITS" | grep -qiE '^feat(\(.+\))?:'; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEXT_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "next tag: $NEXT_TAG"
+          echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+      - name: Create and push tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git tag "${{ steps.next_version.outputs.tag }}"
+          git push origin "${{ steps.next_version.outputs.tag }}"
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         id: import_gpg
@@ -36,6 +80,6 @@ jobs:
         with:
           args: release --clean
         env:
-          # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GORELEASER_CURRENT_TAG: ${{ steps.next_version.outputs.tag || github.ref_name }}
