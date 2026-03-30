@@ -822,14 +822,14 @@ func testAccFindCheapestStandardServer(t *testing.T) string {
 		for _, price := range p.Prices {
 			setupNet := 0.0
 			if price.PriceSetup.Net != "" {
-				fmt.Sscanf(price.PriceSetup.Net, "%f", &setupNet)
+				_, _ = fmt.Sscanf(price.PriceSetup.Net, "%f", &setupNet)
 			}
 			if setupNet > 0 {
 				continue
 			}
 			priceNet := 0.0
 			if price.Price.Net != "" {
-				fmt.Sscanf(price.Price.Net, "%f", &priceNet)
+				_, _ = fmt.Sscanf(price.Price.Net, "%f", &priceNet)
 			}
 			if priceNet <= 0 {
 				continue

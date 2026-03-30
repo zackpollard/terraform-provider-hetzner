@@ -188,7 +188,7 @@ func (d *trafficDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 // parseTrafficData handles the traffic API response data field, which can be:
 // - A map of IP -> array of traffic entries (normal case)
-// - An empty array [] (no data)
+// - An empty array [] (no data).
 func parseTrafficData(raw json.RawMessage) (map[string]trafficAPIEntry, error) {
 	result := make(map[string]trafficAPIEntry)
 
