@@ -8,12 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -162,129 +160,6 @@ func testAccGetOrCreateServer(t *testing.T) string {
 		t.Skip("No test server available; set HETZNER_TEST_SERVER_NUMBER or ensure a server exists on the account")
 	}
 	return cachedServerNumber
-}
-
-// testAccOrderServer orders the cheapest hourly server from the auction
-// and waits for it to be ready. Returns the server number.
-func testAccOrderServer(t *testing.T) (string, error) {
-	t.Helper()
-
-	// Determine which product to order.
-	var productID string
-	if v := os.Getenv("HETZNER_TEST_SERVER_MARKET_PRODUCT_ID"); v != "" {
-		productID = v
-		t.Logf("Using specified server market product: %s", productID)
-	} else {
-		cheapestID := testAccFindCheapestServer(t)
-		productID = fmt.Sprintf("%d", cheapestID)
-	}
-
-	c := testAccNewClient(t)
-
-	// Get the first available SSH key fingerprint for the order.
-	keysBody, err := c.Get("/key")
-	var keyFingerprint string
-	if err == nil {
-		var keys []struct {
-			Key struct {
-				Fingerprint string `json:"fingerprint"`
-			} `json:"key"`
-		}
-		if json.Unmarshal(keysBody, &keys) == nil && len(keys) > 0 {
-			keyFingerprint = keys[0].Key.Fingerprint
-		}
-	}
-	if keyFingerprint == "" {
-		return "", fmt.Errorf("no SSH keys found on the account; upload one before ordering a server")
-	}
-
-	// Order the server via the Robot API with IPv4 addon.
-	t.Logf("Ordering server market product %s via Robot API (with IPv4 addon)", productID)
-	form := url.Values{}
-	form.Set("product_id", productID)
-	form.Add("authorized_key[]", keyFingerprint)
-	form.Add("addon[]", "primary_ipv4")
-
-	body, err := c.Post("/order/server_market/transaction", form)
-	if err != nil {
-		return "", fmt.Errorf("error ordering server market product %s: %w", productID, err)
-	}
-
-	// Parse order response to get transaction ID and optionally the server number.
-	var orderResp struct {
-		Transaction struct {
-			ID           string `json:"id"`
-			ServerNumber *int   `json:"server_number"`
-			Status       string `json:"status"`
-		} `json:"transaction"`
-	}
-	if err := json.Unmarshal(body, &orderResp); err != nil {
-		return "", fmt.Errorf("error parsing order response: %w\nBody: %s", err, string(body))
-	}
-
-	txnID := orderResp.Transaction.ID
-	t.Logf("Order transaction %s, status: %s", txnID, orderResp.Transaction.Status)
-
-	// Poll the transaction until server_number is assigned (may take a few minutes).
-	var serverNumber string
-	if orderResp.Transaction.ServerNumber != nil && *orderResp.Transaction.ServerNumber != 0 {
-		serverNumber = fmt.Sprintf("%d", *orderResp.Transaction.ServerNumber)
-	} else {
-		deadline := time.Now().Add(20 * time.Minute)
-		for time.Now().Before(deadline) {
-			time.Sleep(15 * time.Second)
-			txnBody, err := c.Get("/order/server_market/transaction/" + txnID)
-			if err != nil {
-				t.Logf("Polling transaction %s: %s", txnID, err)
-				continue
-			}
-			var txnResp struct {
-				Transaction struct {
-					ServerNumber *int   `json:"server_number"`
-					Status       string `json:"status"`
-				} `json:"transaction"`
-			}
-			if err := json.Unmarshal(txnBody, &txnResp); err != nil {
-				t.Logf("Error parsing transaction response: %s", err)
-				continue
-			}
-			t.Logf("Transaction %s status: %s, server_number: %v", txnID, txnResp.Transaction.Status, txnResp.Transaction.ServerNumber)
-			if txnResp.Transaction.ServerNumber != nil && *txnResp.Transaction.ServerNumber != 0 {
-				serverNumber = fmt.Sprintf("%d", *txnResp.Transaction.ServerNumber)
-				break
-			}
-		}
-		if serverNumber == "" {
-			return "", fmt.Errorf("timed out waiting for server_number from transaction %s", txnID)
-		}
-	}
-
-	t.Logf("Ordered server %s, waiting for it to be ready...", serverNumber)
-
-	// Poll until server is ready (up to 30 minutes for dedicated server provisioning).
-	deadline := time.Now().Add(30 * time.Minute)
-	for time.Now().Before(deadline) {
-		body, err := c.Get("/server/" + serverNumber)
-		if err != nil {
-			t.Logf("Server %s not yet available: %s", serverNumber, err)
-			time.Sleep(30 * time.Second)
-			continue
-		}
-
-		var serverResp struct {
-			Server struct {
-				Status string `json:"status"`
-			} `json:"server"`
-		}
-		if err := json.Unmarshal(body, &serverResp); err == nil && serverResp.Server.Status == "ready" {
-			t.Logf("Server %s is ready", serverNumber)
-			return serverNumber, nil
-		}
-		t.Logf("Server %s status: %s, waiting...", serverNumber, serverResp.Server.Status)
-		time.Sleep(30 * time.Second)
-	}
-
-	return serverNumber, nil
 }
 
 // testAccServerIP queries the API to get a server's main IP address.
