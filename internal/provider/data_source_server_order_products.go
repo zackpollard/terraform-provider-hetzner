@@ -41,19 +41,19 @@ type serverOrderProductModel struct {
 }
 
 type serverOrderProductPrice struct {
-	Location      types.String `tfsdk:"location"`
-	PriceNet      types.String `tfsdk:"price_net"`
-	PriceGross    types.String `tfsdk:"price_gross"`
-	SetupPriceNet types.String `tfsdk:"setup_price_net"`
+	Location        types.String `tfsdk:"location"`
+	PriceNet        types.String `tfsdk:"price_net"`
+	PriceGross      types.String `tfsdk:"price_gross"`
+	SetupPriceNet   types.String `tfsdk:"setup_price_net"`
 	SetupPriceGross types.String `tfsdk:"setup_price_gross"`
 }
 
 type serverOrderProductAddonItem struct {
-	ID     types.String                 `tfsdk:"id"`
-	Name   types.String                 `tfsdk:"name"`
-	Min    types.Int64                  `tfsdk:"min"`
-	Max    types.Int64                  `tfsdk:"max"`
-	Prices []serverOrderProductPrice    `tfsdk:"prices"`
+	ID     types.String              `tfsdk:"id"`
+	Name   types.String              `tfsdk:"name"`
+	Min    types.Int64               `tfsdk:"min"`
+	Max    types.Int64               `tfsdk:"max"`
+	Prices []serverOrderProductPrice `tfsdk:"prices"`
 }
 
 // API response types
@@ -63,16 +63,16 @@ type serverOrderProductAPIResponse struct {
 }
 
 type serverOrderProductAPI struct {
-	ID              string                          `json:"id"`
-	Name            string                          `json:"name"`
-	Description     []string                        `json:"description"`
-	Traffic         string                          `json:"traffic"`
-	Dist            []string                        `json:"dist"`
-	Arch            []int64                         `json:"arch"`
-	Lang            []string                        `json:"lang"`
-	Location        []string                        `json:"location"`
-	Prices          []serverOrderProductPriceAPI    `json:"prices"`
-	OrderableAddons []serverOrderProductAddonAPI    `json:"orderable_addons"`
+	ID              string                       `json:"id"`
+	Name            string                       `json:"name"`
+	Description     []string                     `json:"description"`
+	Traffic         string                       `json:"traffic"`
+	Dist            []string                     `json:"dist"`
+	Arch            []int64                      `json:"arch"`
+	Lang            []string                     `json:"lang"`
+	Location        []string                     `json:"location"`
+	Prices          []serverOrderProductPriceAPI `json:"prices"`
+	OrderableAddons []serverOrderProductAddonAPI `json:"orderable_addons"`
 }
 
 type priceAmountAPI struct {
@@ -87,11 +87,11 @@ type serverOrderProductPriceAPI struct {
 }
 
 type serverOrderProductAddonAPI struct {
-	ID     string                          `json:"id"`
-	Name   string                          `json:"name"`
-	Min    int64                           `json:"min"`
-	Max    int64                           `json:"max"`
-	Prices []serverOrderProductPriceAPI    `json:"prices"`
+	ID     string                       `json:"id"`
+	Name   string                       `json:"name"`
+	Min    int64                        `json:"min"`
+	Max    int64                        `json:"max"`
+	Prices []serverOrderProductPriceAPI `json:"prices"`
 }
 
 func (d *serverOrderProductsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

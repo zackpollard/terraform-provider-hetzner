@@ -30,10 +30,10 @@ type serverAddonsModel struct {
 }
 
 type serverAddonModel struct {
-	ID    types.String                 `tfsdk:"id"`
-	Name  types.String                 `tfsdk:"name"`
-	Type  types.String                 `tfsdk:"type"`
-	Price []serverOrderProductPrice    `tfsdk:"price"`
+	ID    types.String              `tfsdk:"id"`
+	Name  types.String              `tfsdk:"name"`
+	Type  types.String              `tfsdk:"type"`
+	Price []serverOrderProductPrice `tfsdk:"price"`
 }
 
 // API response types
@@ -43,10 +43,10 @@ type serverAddonAPIResponse struct {
 }
 
 type serverAddonAPI struct {
-	ID    string                          `json:"id"`
-	Name  string                          `json:"name"`
-	Type  string                          `json:"type"`
-	Price []serverOrderProductPriceAPI    `json:"price"`
+	ID    string                       `json:"id"`
+	Name  string                       `json:"name"`
+	Type  string                       `json:"type"`
+	Price []serverOrderProductPriceAPI `json:"price"`
 }
 
 func (d *serverAddonsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

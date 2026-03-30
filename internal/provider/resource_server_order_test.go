@@ -39,7 +39,7 @@ func newServerOrderMock() (http.Handler, *serverOrderMockState) {
 				Cancellation: serverCancellationAPI{
 					ServerIP: "10.0.0.1", ServerNumber: 999,
 					EarliestCancellationDate: state.earliestCancellationDate,
-					Cancelled: true, CancellationDate: state.cancellationDate,
+					Cancelled:                true, CancellationDate: state.cancellationDate,
 				},
 			})
 		case r.Method == http.MethodDelete && r.URL.Path == "/server/999/cancellation":
@@ -48,7 +48,7 @@ func newServerOrderMock() (http.Handler, *serverOrderMockState) {
 				Cancellation: serverCancellationAPI{
 					ServerIP: "10.0.0.1", ServerNumber: 999,
 					EarliestCancellationDate: state.earliestCancellationDate,
-					Cancelled: false, CancellationDate: nil,
+					Cancelled:                false, CancellationDate: nil,
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/server/999/cancellation":
@@ -57,7 +57,7 @@ func newServerOrderMock() (http.Handler, *serverOrderMockState) {
 				Cancellation: serverCancellationAPI{
 					ServerIP: "10.0.0.1", ServerNumber: 999,
 					EarliestCancellationDate: state.earliestCancellationDate,
-					Cancelled: cancelled, CancellationDate: state.cancellationDate,
+					Cancelled:                cancelled, CancellationDate: state.cancellationDate,
 				},
 			})
 		case r.Method == http.MethodPost && r.URL.Path == "/server/999":
@@ -177,7 +177,7 @@ func TestUnitServerOrderResource_standard(t *testing.T) {
 				Cancellation: serverCancellationAPI{
 					ServerIP: "10.0.0.2", ServerNumber: 888,
 					EarliestCancellationDate: "2026-06-30",
-					Cancelled: false, CancellationDate: nil,
+					Cancelled:                false, CancellationDate: nil,
 				},
 			})
 		case r.Method == http.MethodPost && r.URL.Path == "/server/888/cancellation":
@@ -370,7 +370,7 @@ func TestUnitServerOrderResource_delete_already_cancelled(t *testing.T) {
 				Cancellation: serverCancellationAPI{
 					ServerIP: "10.0.0.1", ServerNumber: 999,
 					EarliestCancellationDate: "2026-06-30",
-					Cancelled: true, CancellationDate: &cancelDate,
+					Cancelled:                true, CancellationDate: &cancelDate,
 				},
 			})
 		case r.Method == http.MethodPost && r.URL.Path == "/server/999/cancellation":

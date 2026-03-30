@@ -55,24 +55,24 @@ type serverMarketProductAPIResponse struct {
 }
 
 type serverMarketProductAPI struct {
-	ID              int64                          `json:"id"`
-	Name            string                         `json:"name"`
-	Description     []string                       `json:"description"`
-	Traffic         string                         `json:"traffic"`
-	Dist            []string                       `json:"dist"`
-	CPU             string                         `json:"cpu"`
-	CPUBenchmark    int64                          `json:"cpu_benchmark"`
-	MemorySize      int64                          `json:"memory_size"`
-	HDDSize         int64                          `json:"hdd_size"`
-	HDDText         string                         `json:"hdd_text"`
-	HDDCount        int64                          `json:"hdd_count"`
-	Datacenter      string                         `json:"datacenter"`
-	NetworkSpeed    string                         `json:"network_speed"`
-	Price           string                         `json:"price"`
-	PriceHourly     string                         `json:"price_hourly"`
-	FixedPrice      bool                           `json:"fixed_price"`
-	NextReduceDate  string                         `json:"next_reduce_date"`
-	OrderableAddons []serverOrderProductAddonAPI   `json:"orderable_addons"`
+	ID              int64                        `json:"id"`
+	Name            string                       `json:"name"`
+	Description     []string                     `json:"description"`
+	Traffic         string                       `json:"traffic"`
+	Dist            []string                     `json:"dist"`
+	CPU             string                       `json:"cpu"`
+	CPUBenchmark    int64                        `json:"cpu_benchmark"`
+	MemorySize      int64                        `json:"memory_size"`
+	HDDSize         int64                        `json:"hdd_size"`
+	HDDText         string                       `json:"hdd_text"`
+	HDDCount        int64                        `json:"hdd_count"`
+	Datacenter      string                       `json:"datacenter"`
+	NetworkSpeed    string                       `json:"network_speed"`
+	Price           string                       `json:"price"`
+	PriceHourly     string                       `json:"price_hourly"`
+	FixedPrice      bool                         `json:"fixed_price"`
+	NextReduceDate  string                       `json:"next_reduce_date"`
+	OrderableAddons []serverOrderProductAddonAPI `json:"orderable_addons"`
 }
 
 func (d *serverMarketProductsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

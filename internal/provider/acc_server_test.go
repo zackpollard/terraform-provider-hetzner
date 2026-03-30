@@ -28,10 +28,10 @@ func TestAccServerOrder_Rename(t *testing.T) {
 			{
 				Config:             testAccServerOrderImportedConfig("acc-test-server"),
 				ResourceName:       "hetzner_server_order.test",
-				ImportState:         true,
-				ImportStateId:       serverNumber,
-				ImportStateVerify:   false,
-				ImportStatePersist:  true,
+				ImportState:        true,
+				ImportStateId:      serverNumber,
+				ImportStateVerify:  false,
+				ImportStatePersist: true,
 			},
 			// Verify state and set name.
 			{

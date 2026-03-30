@@ -27,8 +27,8 @@ func TestUnitServerOrderProductsDataSource_read(t *testing.T) {
 					Location:    []string{"FSN", "NBG"},
 					Prices: []serverOrderProductPriceAPI{
 						{
-							Location: "FSN",
-							Price:    priceAmountAPI{"25.2100", "30.0000"},
+							Location:   "FSN",
+							Price:      priceAmountAPI{"25.2100", "30.0000"},
 							PriceSetup: priceAmountAPI{"25.2100", "30.0000"},
 						},
 					},
@@ -40,8 +40,8 @@ func TestUnitServerOrderProductsDataSource_read(t *testing.T) {
 							Max:  1,
 							Prices: []serverOrderProductPriceAPI{
 								{
-									Location: "FSN",
-									Price:    priceAmountAPI{"1.0000", "1.1900"},
+									Location:   "FSN",
+									Price:      priceAmountAPI{"1.0000", "1.1900"},
 									PriceSetup: priceAmountAPI{"0.0000", "0.0000"},
 								},
 							},

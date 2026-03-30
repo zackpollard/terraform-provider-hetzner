@@ -12,7 +12,6 @@ import (
 // TestAccVSwitch_CRUD tests the full vSwitch lifecycle.
 func TestAccVSwitch_CRUD(t *testing.T) {
 
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -46,7 +45,6 @@ func TestAccVSwitch_CRUD(t *testing.T) {
 // TestAccVSwitch_DataSources tests vSwitch data sources.
 func TestAccVSwitch_DataSources(t *testing.T) {
 
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -63,7 +61,6 @@ func TestAccVSwitch_DataSources(t *testing.T) {
 
 // TestAccVSwitch_DataSource reads a single vSwitch via singular data source.
 func TestAccVSwitch_DataSource(t *testing.T) {
-
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
